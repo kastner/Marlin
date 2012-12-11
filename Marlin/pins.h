@@ -973,19 +973,19 @@
 #define X_STEP_PIN          0
 #define X_DIR_PIN           1
 #define X_ENABLE_PIN       39
-#define X_MIN_PIN          13
+#define X_MIN_PIN          35
 #define X_MAX_PIN          -1
 
 #define Y_STEP_PIN          2
 #define Y_DIR_PIN           3
 #define Y_ENABLE_PIN       38
-#define Y_MIN_PIN          14
+#define Y_MIN_PIN           8
 #define Y_MAX_PIN          -1
 
 #define Z_STEP_PIN          4
 #define Z_DIR_PIN           5
 #define Z_ENABLE_PIN       23
-#define Z_MIN_PIN          15
+#define Z_MIN_PIN          36
 #define Z_MAX_PIN          -1
 
 #define E0_STEP_PIN         6
@@ -996,7 +996,7 @@
 #define HEATER_1_PIN       -1
 #define HEATER_2_PIN       -1
 #define HEATER_BED_PIN     20  // Bed
-#define FAN_PIN            22  // Fan
+#define FAN_PIN            16  // Fan
 
 #if MOTHERBOARD == 8
   #define TEMP_0_PIN          7  // Extruder / Analog pin numbering
