@@ -70,7 +70,8 @@
 // Horizontal offset of the universal joints on the carriages.
 #define DELTA_CARRIAGE_OFFSET 18.0 // mm
 
-#define DELTA_FUDGE -27.3
+// For convex/concave -- -20->-30 makes the center go DOWN
+#define DELTA_FUDGE -27.4 // 152.4 total radius
 
 // Effective horizontal distance bridged by diagonal push rods.
 #define DELTA_RADIUS (DELTA_SMOOTH_ROD_OFFSET-DELTA_EFFECTOR_OFFSET-DELTA_CARRIAGE_OFFSET-DELTA_FUDGE)
@@ -304,7 +305,8 @@ const bool Z_ENDSTOPS_INVERTING = false; // set to true to invert the logic of t
 #define MANUAL_Y_HOME_POS 0
 //#define MANUAL_Z_HOME_POS 196.6  // (ubis) Distance between nozzle and print surface after homing.
 // #define MANUAL_Z_HOME_POS 203.1  // (buda) Distance between nozzle and print surface after homing.
-#define MANUAL_Z_HOME_POS 200.6  // (buda - glass) Distance between nozzle and print surface after homing.
+// #define MANUAL_Z_HOME_POS 204.5  // (buda - glass) Distance between nozzle and print surface after homing.
+#define MANUAL_Z_HOME_POS 195.7  // (buda - glass -- microwave) Distance between nozzle and print surface after homing.
 
 //// MOVEMENT SETTINGS
 #define NUM_AXIS 4 // The axis order in all axis related arrays is X, Y, Z, E
@@ -312,18 +314,19 @@ const bool Z_ENDSTOPS_INVERTING = false; // set to true to invert the logic of t
 
 // default settings 
 
-#define DELTA_AXIS_STEPS              56.333
+// #define DELTA_AXIS_STEPS              56.333
+#define DELTA_AXIS_STEPS              55.55
 // #define DEFAULT_AXIS_STEPS_PER_UNIT   {DELTA_AXIS_STEPS, DELTA_AXIS_STEPS, DELTA_AXIS_STEPS, 100}
-#define DEFAULT_AXIS_STEPS_PER_UNIT   {DELTA_AXIS_STEPS, DELTA_AXIS_STEPS, DELTA_AXIS_STEPS, 101.30} // 1.75mm airtripper
+#define DEFAULT_AXIS_STEPS_PER_UNIT   {DELTA_AXIS_STEPS, DELTA_AXIS_STEPS, DELTA_AXIS_STEPS, 100.8} // 1.75mm airtripper
 //#define DEFAULT_AXIS_STEPS_PER_UNIT   {DELTA_AXIS_STEPS, DELTA_AXIS_STEPS, DELTA_AXIS_STEPS, 101.30} // 3mm greg's / printrbot
 //#define DEFAULT_AXIS_STEPS_PER_UNIT   {DELTA_AXIS_STEPS, DELTA_AXIS_STEPS, DELTA_AXIS_STEPS, 554.00} // 1.75mm greg's / printrbot
 #define DEFAULT_MAX_FEEDRATE          {400, 400, 400, 20}  // (mm/sec)
 
 // From Johann
-#define DEFAULT_MAX_ACCELERATION      {400, 400, 400, 400}    // X, Y, Z, E maximum start speed for accelerated moves.
+#define DEFAULT_MAX_ACCELERATION      {9000, 9000, 9000, 9000}    // X, Y, Z, E maximum start speed for accelerated moves.
 
-#define DEFAULT_ACCELERATION          400   // X, Y, Z and E max acceleration in mm/s^2 for printing moves
-#define DEFAULT_RETRACT_ACCELERATION  400   // X, Y, Z and E max acceleration in mm/s^2 for r retracts
+#define DEFAULT_ACCELERATION          3000   // X, Y, Z and E max acceleration in mm/s^2 for printing moves
+#define DEFAULT_RETRACT_ACCELERATION  3000   // X, Y, Z and E max acceleration in mm/s^2 for r retracts
 
 // 
 #define DEFAULT_XYJERK                20.0   // (mm/sec)
