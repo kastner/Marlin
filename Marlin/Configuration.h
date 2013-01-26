@@ -59,19 +59,22 @@
 #define DELTA_SEGMENTS_PER_SECOND 100
 
 // Center-to-center distance of the holes in the diagonal push rods.
-#define DELTA_DIAGONAL_ROD 241.14 // mm
+#define DELTA_DIAGONAL_ROD 254.0 // mm
 
 // Horizontal offset from middle of printer to smooth rod center.
-#define DELTA_SMOOTH_ROD_OFFSET 175.0 // mm
+#define DELTA_SMOOTH_ROD_OFFSET 206.0 // mm
 
 // Horizontal offset of the universal joints on the end effector.
-#define DELTA_EFFECTOR_OFFSET 32.0 // mm
+#define DELTA_EFFECTOR_OFFSET 21.0 // mm
 
 // Horizontal offset of the universal joints on the carriages.
 #define DELTA_CARRIAGE_OFFSET 18.0 // mm
 
+// In order to correct low-center, DELTA_RADIUS must be increased.
+// In order to correct high-center, DELTA_RADIUS must be decreased.
 // For convex/concave -- -20->-30 makes the center go DOWN
-#define DELTA_FUDGE -27.4 // 152.4 total radius
+// #define DELTA_FUDGE -27.4 // 152.4 total radius
+#define DELTA_FUDGE 8.5
 
 // Effective horizontal distance bridged by diagonal push rods.
 #define DELTA_RADIUS (DELTA_SMOOTH_ROD_OFFSET-DELTA_EFFECTOR_OFFSET-DELTA_CARRIAGE_OFFSET-DELTA_FUDGE)
@@ -157,9 +160,9 @@
 
 // If you are using a preconfigured hotend then you can use one of the value sets by uncommenting it
 // Ultimaker
-    #define  DEFAULT_Kp 22.2
-    #define  DEFAULT_Ki 1.08  
-    #define  DEFAULT_Kd 114  
+    // #define  DEFAULT_Kp 22.2
+    // #define  DEFAULT_Ki 1.08  
+    // #define  DEFAULT_Kd 114  
 
 // Makergear
 //    #define  DEFAULT_Kp 7.0
@@ -170,6 +173,17 @@
 //    #define  DEFAULT_Kp 63.0
 //    #define  DEFAULT_Ki 2.25
 //    #define  DEFAULT_Kd 440
+
+// Budaschnozzle
+    #define DEFAULT_Kp 117.80
+    #define DEFAULT_Ki 7.65
+    #define DEFAULT_Kd 453.56
+
+// J-Head
+    #define DEFAULT_Kp 25.54
+    #define DEFAULT_Ki 1.75
+    #define DEFAULT_Kd 93.30
+
 #endif // PIDTEMP
 
 // Bed Temperature Control
@@ -306,7 +320,12 @@ const bool Z_ENDSTOPS_INVERTING = false; // set to true to invert the logic of t
 //#define MANUAL_Z_HOME_POS 196.6  // (ubis) Distance between nozzle and print surface after homing.
 // #define MANUAL_Z_HOME_POS 203.1  // (buda) Distance between nozzle and print surface after homing.
 // #define MANUAL_Z_HOME_POS 204.5  // (buda - glass) Distance between nozzle and print surface after homing.
-#define MANUAL_Z_HOME_POS 195.7  // (buda - glass -- microwave) Distance between nozzle and print surface after homing.
+// #define MANUAL_Z_HOME_POS 197.85  // (buda - glass -- microwave -- bigger step) Distance between nozzle and print surface after homing.
+// #define MANUAL_Z_HOME_POS 202.2  // (buda - glass -- microwave) Distance between nozzle and print surface after homing.
+// #define MANUAL_Z_HOME_POS 224.0  // (buda - glass -- microwave) Distance between nozzle and print surface after homing.
+// #define MANUAL_Z_HOME_POS 208.98  // (j-head - glass -- microwave)
+// #define MANUAL_Z_HOME_POS 208.25  // (j-head - glass -- small -- sometimes it starts at 0...)
+#define MANUAL_Z_HOME_POS 195.37  // (j-head - glass -- small -- mounted under)
 
 //// MOVEMENT SETTINGS
 #define NUM_AXIS 4 // The axis order in all axis related arrays is X, Y, Z, E
@@ -314,19 +333,19 @@ const bool Z_ENDSTOPS_INVERTING = false; // set to true to invert the logic of t
 
 // default settings 
 
-// #define DELTA_AXIS_STEPS              56.333
-#define DELTA_AXIS_STEPS              55.55
+#define DELTA_AXIS_STEPS              56.333
+// #define DELTA_AXIS_STEPS              55.55 // johann
 // #define DEFAULT_AXIS_STEPS_PER_UNIT   {DELTA_AXIS_STEPS, DELTA_AXIS_STEPS, DELTA_AXIS_STEPS, 100}
 #define DEFAULT_AXIS_STEPS_PER_UNIT   {DELTA_AXIS_STEPS, DELTA_AXIS_STEPS, DELTA_AXIS_STEPS, 100.8} // 1.75mm airtripper
 //#define DEFAULT_AXIS_STEPS_PER_UNIT   {DELTA_AXIS_STEPS, DELTA_AXIS_STEPS, DELTA_AXIS_STEPS, 101.30} // 3mm greg's / printrbot
 //#define DEFAULT_AXIS_STEPS_PER_UNIT   {DELTA_AXIS_STEPS, DELTA_AXIS_STEPS, DELTA_AXIS_STEPS, 554.00} // 1.75mm greg's / printrbot
 #define DEFAULT_MAX_FEEDRATE          {400, 400, 400, 20}  // (mm/sec)
 
-// From Johann
-#define DEFAULT_MAX_ACCELERATION      {9000, 9000, 9000, 9000}    // X, Y, Z, E maximum start speed for accelerated moves.
+#define DEFAULT_MAX_ACCELERATION      {400, 400, 400, 400}    // X, Y, Z, E maximum start speed for accelerated moves.
 
-#define DEFAULT_ACCELERATION          3000   // X, Y, Z and E max acceleration in mm/s^2 for printing moves
-#define DEFAULT_RETRACT_ACCELERATION  3000   // X, Y, Z and E max acceleration in mm/s^2 for r retracts
+#define DEFAULT_ACCELERATION          400   // X, Y, Z and E max acceleration in mm/s^2 for printing moves
+#define DEFAULT_RETRACT_ACCELERATION  400   // X, Y, Z and E max acceleration in mm/s^2 for r retracts
+
 
 // 
 #define DEFAULT_XYJERK                20.0   // (mm/sec)
