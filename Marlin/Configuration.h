@@ -56,25 +56,25 @@
 // Make delta curves from many straight lines (linear interpolation).
 // This is a trade-off between visible corners (not enough segments)
 // and processor overload (too many expensive sqrt calls).
-#define DELTA_SEGMENTS_PER_SECOND 100
+#define DELTA_SEGMENTS_PER_SECOND 150
 
 // Center-to-center distance of the holes in the diagonal push rods.
-#define DELTA_DIAGONAL_ROD 254.0 // mm
+#define DELTA_DIAGONAL_ROD 287.0 // mm
 
 // Horizontal offset from middle of printer to smooth rod center.
 #define DELTA_SMOOTH_ROD_OFFSET 206.0 // mm
 
 // Horizontal offset of the universal joints on the end effector.
-#define DELTA_EFFECTOR_OFFSET 21.0 // mm
+#define DELTA_EFFECTOR_OFFSET 32.0 // mm
 
 // Horizontal offset of the universal joints on the carriages.
-#define DELTA_CARRIAGE_OFFSET 18.0 // mm
+#define DELTA_CARRIAGE_OFFSET 26.0 // mm
 
 // In order to correct low-center, DELTA_RADIUS must be increased.
 // In order to correct high-center, DELTA_RADIUS must be decreased.
 // For convex/concave -- -20->-30 makes the center go DOWN
 // #define DELTA_FUDGE -27.4 // 152.4 total radius
-#define DELTA_FUDGE 8.5
+#define DELTA_FUDGE -4.5
 
 // Effective horizontal distance bridged by diagonal push rods.
 #define DELTA_RADIUS (DELTA_SMOOTH_ROD_OFFSET-DELTA_EFFECTOR_OFFSET-DELTA_CARRIAGE_OFFSET-DELTA_FUDGE)
@@ -161,23 +161,23 @@
 // If you are using a preconfigured hotend then you can use one of the value sets by uncommenting it
 // Ultimaker
     // #define  DEFAULT_Kp 22.2
-    // #define  DEFAULT_Ki 1.08  
-    // #define  DEFAULT_Kd 114  
+    // #define  DEFAULT_Ki 1.08
+    // #define  DEFAULT_Kd 114
 
 // Makergear
 //    #define  DEFAULT_Kp 7.0
-//    #define  DEFAULT_Ki 0.1  
-//    #define  DEFAULT_Kd 12  
+//    #define  DEFAULT_Ki 0.1
+//    #define  DEFAULT_Kd 12
 
-// Mendel Parts V9 on 12V    
+// Mendel Parts V9 on 12V
 //    #define  DEFAULT_Kp 63.0
 //    #define  DEFAULT_Ki 2.25
 //    #define  DEFAULT_Kd 440
 
 // Budaschnozzle
-    #define DEFAULT_Kp 117.80
-    #define DEFAULT_Ki 7.65
-    #define DEFAULT_Kd 453.56
+    // #define DEFAULT_Kp 117.80
+    // #define DEFAULT_Ki 7.65
+    // #define DEFAULT_Kd 453.56
 
 // J-Head
     #define DEFAULT_Kp 25.54
@@ -323,7 +323,8 @@ const bool Z_ENDSTOPS_INVERTING = false; // set to true to invert the logic of t
 // #define MANUAL_Z_HOME_POS 224.0  // (buda - glass -- microwave) Distance between nozzle and print surface after homing.
 // #define MANUAL_Z_HOME_POS 208.98  // (j-head - glass -- microwave)
 // #define MANUAL_Z_HOME_POS 208.25  // (j-head - glass -- small -- sometimes it starts at 0...)
-#define MANUAL_Z_HOME_POS 195.37  // (j-head - glass -- small -- mounted under)
+// #define MANUAL_Z_HOME_POS 195.37  // (j-head - glass -- small -- mounted under)
+#define MANUAL_Z_HOME_POS 160.37  // (j-head - bigglass -- long arms)
 
 //// MOVEMENT SETTINGS
 #define NUM_AXIS 4 // The axis order in all axis related arrays is X, Y, Z, E
