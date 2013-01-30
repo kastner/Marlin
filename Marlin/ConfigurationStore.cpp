@@ -139,6 +139,15 @@ void Config_PrintSettings()
     SERIAL_ECHOPAIR(" Y" ,add_homeing[1] );
     SERIAL_ECHOPAIR(" Z" ,add_homeing[2] );
     SERIAL_ECHOLN("");
+
+    SERIAL_ECHO_START;
+    SERIAL_ECHOLNPGM("Delta:");
+    SERIAL_ECHO_START;
+    SERIAL_ECHOPAIR("  Radius: ",DELTA_RADIUS );
+    SERIAL_ECHOPAIR(" Diagonal: " ,DELTA_DIAGONAL_ROD );
+    SERIAL_ECHOPAIR(" Max Z: " ,MANUAL_Z_HOME_POS );
+    SERIAL_ECHOPAIR(" PINNNN E0_STEP_PIN: " ,(float)E0_STEP_PIN );
+    SERIAL_ECHOLN("");
 #ifdef PIDTEMP
     SERIAL_ECHO_START;
     SERIAL_ECHOLNPGM("PID settings:");
