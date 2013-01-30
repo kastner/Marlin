@@ -53,6 +53,14 @@
 //============================== Delta Settings =============================
 //===========================================================================
 
+// Jointed delta instead of linear
+#define DELTA_JOINTED
+#define BASE_SIDE 10.0
+#define END_EFFECTOR_SIDE 10.0
+#define DELTA_ARM_LENGTH 100.0
+#define DELTA_ROD_LENGTH 50.0
+#define DELTA_PI 3.141592
+
 // Make delta curves from many straight lines (linear interpolation).
 // This is a trade-off between visible corners (not enough segments)
 // and processor overload (too many expensive sqrt calls).
@@ -76,6 +84,8 @@
 // Effective X/Y positions of the three vertical towers.
 #define SIN_60 0.8660254037844386
 #define COS_60 0.5
+#define SIN_120 = 0.86602540378
+#define COS_120 = -0.5
 #define DELTA_TOWER1_X -SIN_60*DELTA_RADIUS // front left tower
 #define DELTA_TOWER1_Y -COS_60*DELTA_RADIUS
 #define DELTA_TOWER2_X SIN_60*DELTA_RADIUS // front right tower

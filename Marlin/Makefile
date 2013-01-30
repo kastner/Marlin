@@ -37,14 +37,14 @@
 # from the commandline with "make HARDWARE_MOTHERBOARD=71" for example
 
 # This defined the board you are compiling for (see Configuration.h for the options)
-HARDWARE_MOTHERBOARD ?= 11
+HARDWARE_MOTHERBOARD ?= 33
 
 # Arduino source install directory, and version number
-ARDUINO_INSTALL_DIR  ?= ../../arduino-0022
-ARDUINO_VERSION      ?= 22
+ARDUINO_INSTALL_DIR  ?= /Users/kastner/Downloads/Arduino.app/Contents/Resources/Java
+ARDUINO_VERSION      ?= 103
 
 # You can optionally set a path to the avr-gcc tools. Requires a trailing slash. (ex: /usr/local/avr-gcc/bin)
-AVR_TOOLS_PATH ?= 
+AVR_TOOLS_PATH ?= /usr/local/CrossPack-AVR-20121207/bin/
 
 #Programmer configuration
 UPLOAD_RATE        ?= 115200

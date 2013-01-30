@@ -169,6 +169,7 @@ int fanSpeed=0;
 const char axis_codes[NUM_AXIS] = {'X', 'Y', 'Z', 'E'};
 static float destination[NUM_AXIS] = {  0.0, 0.0, 0.0, 0.0};
 static float delta[3] = {0.0, 0.0, 0.0};
+static float delta_theta[3] = {0.0, 0.0, 0.0};
 static float offset[3] = {0.0, 0.0, 0.0};
 static bool home_all_axis = true;
 static float feedrate = 1500.0, next_feedrate, saved_feedrate;
@@ -1680,30 +1681,60 @@ void clamp_to_software_endstops(float target[3])
   }
 }
 
+int delta_calcAngleYZ(float cartesian[3], float& theta)
+{
+  float y1 = -0.5 * 0.57735 * BASE_SIDE; // f/2 * tg 30
+  cartesian[Y_AXIS] -= 0.5 * 0.57735 * END_EFFECTOR_SIDE; // shift center to edge
+
+  // z = a + b*y
+  float a = (cartesian[X_AXIS]*cartesian[X_AXIS] + cartesian[Y_AXIS]*cartesian[Y_AXIS] + cartesian[Z_AXIS]*cartesian[Z_AXIS] + DELTA_ARM_LENGTH*DELTA_ARM_LENGTH - DELTA_ROD_LENGTH*DELTA_ROD_LENGTH - y1*y1)/(2*cartesian[Z_AXIS]);
+  float b = (y1-cartesian[Y_AXIS])/cartesian[Z_AXIS];
+
+  // discriminant
+  float d = -(a+b*y1) * (a+b*y1) + DELTA_ARM_LENGTH * (b*b*DELTA_ARM_LENGTH + DELTA_ARM_LENGTH);
+
+  if (d < 0) return -1; // non-existing point
+
+  float yj = (y1 - a*b - sqrt(d))/(b*b + 1); // choosing outer point
+  float zj = a + b*yj;
+
+  theta = 180.0*atan(-zj/(y1 - yj))/DELTA_PI + ((yj>y1)?180.0:0.0);
+}
+
 void calculate_delta(float cartesian[3])
 {
-  delta[X_AXIS] = sqrt(sq(DELTA_DIAGONAL_ROD)
-                       - sq(DELTA_TOWER1_X-cartesian[X_AXIS])
-                       - sq(DELTA_TOWER1_Y-cartesian[Y_AXIS])
-                       ) + cartesian[Z_AXIS];
-  delta[Y_AXIS] = sqrt(sq(DELTA_DIAGONAL_ROD)
-                       - sq(DELTA_TOWER2_X-cartesian[X_AXIS])
-                       - sq(DELTA_TOWER2_Y-cartesian[Y_AXIS])
-                       ) + cartesian[Z_AXIS];
-  delta[Z_AXIS] = sqrt(sq(DELTA_DIAGONAL_ROD)
-                       - sq(DELTA_TOWER3_X-cartesian[X_AXIS])
-                       - sq(DELTA_TOWER3_Y-cartesian[Y_AXIS])
-                       ) + cartesian[Z_AXIS];
-  /*
+  // inverse kinematics: (x0, y0, z0) -> (theta1, theta2, theta3)
+  // returned status: 0=OK, -1=non-existing position
+  int status = delta_calcAngleYZ(cartesian, delta_theta[0]);
+  // if (status == 0) status = delta_calcAngleYZ(cartesian[X_AXIS]*DELTA_COS120 + cartesian[Y_AXIS]*DELTA_SIN120, cartesian[Y_AXIS]*DELTA_COS120-cartesian[X_AXIS]*DELTA_SIN120, cartesian[Z_AXIS], theta2); // rotate coords to +120 deg
+  // if (status == 0) status = delta_calcAngleYZ(cartesian[X_AXIS]*DELTA_COS120 - cartesian[Y_AXIS]*DELTA_SIN120, cartesian[Y_AXIS]*DELTA_COS120+cartesian[X_AXIS]*DELTA_SIN120, cartesian[Z_AXIS], theta3); // rotate coords to -120 deg
+
+  //return status;
+  delta[X_AXIS] = delta_theta[0];
+  delta[Y_AXIS] = delta_theta[1];
+  delta[Z_AXIS] = delta_theta[2];
+
+  //delta[X_AXIS] = sqrt(sq(DELTA_DIAGONAL_ROD)
+  // - sq(DELTA_TOWER1_X-cartesian[X_AXIS])
+  // - sq(DELTA_TOWER1_Y-cartesian[Y_AXIS])
+  // ) + cartesian[Z_AXIS];
+  //delta[Y_AXIS] = sqrt(sq(DELTA_DIAGONAL_ROD)
+  // - sq(DELTA_TOWER2_X-cartesian[X_AXIS])
+  // - sq(DELTA_TOWER2_Y-cartesian[Y_AXIS])
+  // ) + cartesian[Z_AXIS];
+  //delta[Z_AXIS] = sqrt(sq(DELTA_DIAGONAL_ROD)
+  // - sq(DELTA_TOWER3_X-cartesian[X_AXIS])
+  // - sq(DELTA_TOWER3_Y-cartesian[Y_AXIS])
+  // ) + cartesian[Z_AXIS];
+
   SERIAL_ECHOPGM("cartesian x="); SERIAL_ECHO(cartesian[X_AXIS]);
   SERIAL_ECHOPGM(" y="); SERIAL_ECHO(cartesian[Y_AXIS]);
   SERIAL_ECHOPGM(" z="); SERIAL_ECHOLN(cartesian[Z_AXIS]);
-
   SERIAL_ECHOPGM("delta x="); SERIAL_ECHO(delta[X_AXIS]);
   SERIAL_ECHOPGM(" y="); SERIAL_ECHO(delta[Y_AXIS]);
   SERIAL_ECHOPGM(" z="); SERIAL_ECHOLN(delta[Z_AXIS]);
-  */
 }
+
 
 void prepare_move()
 {
