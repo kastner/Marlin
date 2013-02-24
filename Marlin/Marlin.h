@@ -4,8 +4,6 @@
 #ifndef MARLIN_H
 #define MARLIN_H
 
-#define  HardwareSerial_h // trick to disable the standard HWserial
-
 #define  FORCE_INLINE __attribute__((always_inline)) inline
 
 #include <math.h>
@@ -24,14 +22,16 @@
 #include "Configuration.h"
 #include "pins.h"
 
-#if ARDUINO >= 100 
-  #if defined(__AVR_ATmega644P__)
-    #include "WProgram.h"
-  #else
-    #include "Arduino.h"
-  #endif
+#ifndef AT90USB
+#define  HardwareSerial_h // trick to disable the standard HWserial
+#endif
+
+#if (ARDUINO >= 100)
+# include "Arduino.h"
 #else
-   #include "WProgram.h"
+# include "WProgram.h"
+  //Arduino < 1.0.0 does not define this, so we need to do it ourselfs
+# define analogInputToDigitalPin(p) ((p) + A0)
 #endif
 
 #include "MarlinSerial.h"
@@ -45,7 +45,7 @@
 
 #include "WString.h"
 
-#if MOTHERBOARD == 8  // Teensylu
+#ifdef AT90USB
   #define MYSERIAL Serial
 #else
   #define MYSERIAL MSerial
@@ -180,7 +180,6 @@ void setPwmFrequency(uint8_t pin, int val);
 extern float homing_feedrate[];
 extern bool axis_relative_modes[];
 extern int feedmultiply;
-extern bool feedmultiplychanged;
 extern int extrudemultiply; // Sets extrude multiply factor (in percent)
 extern float current_position[NUM_AXIS] ;
 extern float add_homeing[3];

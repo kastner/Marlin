@@ -1,8 +1,4 @@
 /*
- * fixed by this patch:
- * http://code.google.com/p/arduino/issues/detail?id=604
- * */
-/*
   wiring.h - Partial implementation of the Wiring API for the ATmega8.
   Part of Arduino - http://www.arduino.cc/
 
@@ -29,6 +25,7 @@
 #ifndef Wiring_h
 #define Wiring_h
 
+#include <math.h>
 #include <avr/io.h>
 #include <stdlib.h>
 #include "binary.h"
@@ -80,9 +77,7 @@ extern "C"{
 #define max(a,b) ((a)>(b)?(a):(b))
 #define abs(x) ((x)>0?(x):-(x))
 #define constrain(amt,low,high) ((amt)<(low)?(low):((amt)>(high)?(high):(amt)))
-#if __AVR_LIBC_VERSION__ < 10701UL
 #define round(x)     ((x)>=0?(long)((x)+0.5):(long)((x)-0.5))
-#endif
 #define radians(deg) ((deg)*DEG_TO_RAD)
 #define degrees(rad) ((rad)*RAD_TO_DEG)
 #define sq(x) ((x)*(x))

@@ -132,6 +132,8 @@
 // M501 - reads parameters from EEPROM (if you need reset them after you changed them temporarily).  
 // M502 - reverts to the default "factory settings".  You still need to store them in EEPROM afterwards if you want to.
 // M503 - print the current settings (from memory not from eeprom)
+// M540 - Use S[0|1] to enable or disable the stop SD card print on endstop hit (requires ABORT_ON_ENDSTOP_HIT_FEATURE_ENABLED)
+// M600 - Pause for filament change X[pos] Y[pos] Z[relative lift] E[initial retract] L[later retract distance for removal]
 // M907 - Set digital trimpot motor current using axis codes.
 // M908 - Control digital trimpot directly.
 // M350 - Set microstepping mode.
@@ -154,7 +156,6 @@ CardReader card;
 float homing_feedrate[] = HOMING_FEEDRATE;
 bool axis_relative_modes[] = AXIS_RELATIVE_MODES;
 int feedmultiply=100; //100->1 200->2
-bool feedmultiplychanged;
 int saved_feedmultiply;
 int extrudemultiply=100; //100->1 200->2
 float current_position[NUM_AXIS] = { 0.0, 0.0, 0.0, 0.0 };
@@ -301,6 +302,10 @@ void setup_powerhold()
       SET_OUTPUT(SUICIDE_PIN);
       WRITE(SUICIDE_PIN, HIGH);
    #endif
+ #endif
+ #if (PS_ON_PIN > -1)
+   SET_OUTPUT(PS_ON_PIN);
+   WRITE(PS_ON_PIN, PS_ON_AWAKE);
  #endif
 }
 
@@ -536,10 +541,10 @@ void get_command()
         stoptime=millis();
         char time[30];
         unsigned long t=(stoptime-starttime)/1000;
-        int sec,min;
-        min=t/60;
-        sec=t%60;
-        sprintf_P(time, PSTR("%i min, %i sec"),min,sec);
+        int hours, minutes;
+        minutes=(t/60)%60;
+        hours=t/60/60;
+        sprintf_P(time, PSTR("%i hours %i minutes"),hours, minutes);
         SERIAL_ECHO_START;
         SERIAL_ECHOLN(time);
         lcd_setstatus(time);
@@ -1093,7 +1098,7 @@ void process_commands()
   {
     switch( (int)code_value() ) 
     {
-#ifdef ULTRA_LCD
+#ifdef ULTIPANEL
     case 0: // M0 - Unconditional stop - Wait for user button press on LCD
     case 1: // M1 - Conditional stop - Wait for user button press on LCD
     {
@@ -1118,6 +1123,7 @@ void process_commands()
           lcd_update();
         }
       }
+      LCD_MESSAGEPGM(MSG_RESUMING);
     }
     break;
 #endif
@@ -1214,24 +1220,22 @@ void process_commands()
       if (code_seen('S'))
       {
         int pin_status = code_value();
+        int pin_number = LED_PIN;
         if (code_seen('P') && pin_status >= 0 && pin_status <= 255)
+          pin_number = code_value();
+        for(int8_t i = 0; i < (int8_t)sizeof(sensitive_pins); i++)
         {
-          int pin_number = code_value();
-          for(int8_t i = 0; i < (int8_t)sizeof(sensitive_pins); i++)
+          if (sensitive_pins[i] == pin_number)
           {
-            if (sensitive_pins[i] == pin_number)
-            {
-              pin_number = -1;
-              break;
-            }
+            pin_number = -1;
+            break;
           }
-          
-          if (pin_number > -1)
-          {              
-            pinMode(pin_number, OUTPUT);
-            digitalWrite(pin_number, pin_status);
-            analogWrite(pin_number, pin_status);
-          }
+        }
+        if (pin_number > -1)
+        {
+          pinMode(pin_number, OUTPUT);
+          digitalWrite(pin_number, pin_status);
+          analogWrite(pin_number, pin_status);
         }
       }
      break;
@@ -1396,7 +1400,7 @@ void process_commands()
     #if (PS_ON_PIN > -1)
       case 80: // M80 - ATX Power On
         SET_OUTPUT(PS_ON_PIN); //GND
-        WRITE(PS_ON_PIN, LOW);
+        WRITE(PS_ON_PIN, PS_ON_AWAKE);
         break;
       #endif
       
@@ -1407,7 +1411,7 @@ void process_commands()
         suicide();
       #elif (PS_ON_PIN > -1)
         SET_OUTPUT(PS_ON_PIN); 
-        WRITE(PS_ON_PIN, HIGH);
+        WRITE(PS_ON_PIN, PS_ON_ASLEEP);
       #endif
 		break;
         
@@ -1478,7 +1482,10 @@ void process_commands()
       SERIAL_PROTOCOLPGM(MSG_M115_REPORT);
       break;
     case 117: // M117 display message
-      lcd_setstatus(cmdbuffer[bufindr]+5);
+      starpos = (strchr(strchr_pointer + 5,'*'));
+      if(starpos!=NULL)
+        *(starpos-1)='\0';
+      lcd_setstatus(strchr_pointer + 5);
       break;
     case 114: // M114
       SERIAL_PROTOCOLPGM("X:");
@@ -1629,7 +1636,6 @@ void process_commands()
       if(code_seen('S')) 
       {
         feedmultiply = code_value() ;
-        feedmultiplychanged = true;
       }
     }
     break;
@@ -1641,7 +1647,7 @@ void process_commands()
       }
     }
     break;
-    
+
     #ifdef PIDTEMP
     case 301: // M301
       {
@@ -1748,22 +1754,153 @@ void process_commands()
         Config_StoreSettings();
     }
     break;
-    case 501: // Read settings from EEPROM
+    case 501: // M501 Read settings from EEPROM
     {
         Config_RetrieveSettings();
     }
     break;
-    case 502: // Revert to default settings
+    case 502: // M502 Revert to default settings
     {
         Config_ResetDefault();
     }
     break;
-    case 503: // print settings currently in memory
+    case 503: // M503 print settings currently in memory
     {
         Config_PrintSettings();
     }
     break;
-    case 907: // Set digital trimpot motor current using axis codes.
+    #ifdef ABORT_ON_ENDSTOP_HIT_FEATURE_ENABLED
+    case 540:
+    {
+        if(code_seen('S')) abort_on_endstop_hit = code_value() > 0;
+    }
+    break;
+    #endif
+    #ifdef FILAMENTCHANGEENABLE
+    case 600: //Pause for filament change X[pos] Y[pos] Z[relative lift] E[initial retract] L[later retract distance for removal]
+    {
+        float target[4];
+        float lastpos[4];
+        target[X_AXIS]=current_position[X_AXIS];
+        target[Y_AXIS]=current_position[Y_AXIS];
+        target[Z_AXIS]=current_position[Z_AXIS];
+        target[E_AXIS]=current_position[E_AXIS];
+        lastpos[X_AXIS]=current_position[X_AXIS];
+        lastpos[Y_AXIS]=current_position[Y_AXIS];
+        lastpos[Z_AXIS]=current_position[Z_AXIS];
+        lastpos[E_AXIS]=current_position[E_AXIS];
+        //retract by E
+        if(code_seen('E')) 
+        {
+          target[E_AXIS]+= code_value();
+        }
+        else
+        {
+          #ifdef FILAMENTCHANGE_FIRSTRETRACT
+            target[E_AXIS]+= FILAMENTCHANGE_FIRSTRETRACT ;
+          #endif
+        }
+        plan_buffer_line(target[X_AXIS], target[Y_AXIS], target[Z_AXIS], target[E_AXIS], feedrate/60, active_extruder);
+        
+        //lift Z
+        if(code_seen('Z')) 
+        {
+          target[Z_AXIS]+= code_value();
+        }
+        else
+        {
+          #ifdef FILAMENTCHANGE_ZADD
+            target[Z_AXIS]+= FILAMENTCHANGE_ZADD ;
+          #endif
+        }
+        plan_buffer_line(target[X_AXIS], target[Y_AXIS], target[Z_AXIS], target[E_AXIS], feedrate/60, active_extruder);
+        
+        //move xy
+        if(code_seen('X')) 
+        {
+          target[X_AXIS]+= code_value();
+        }
+        else
+        {
+          #ifdef FILAMENTCHANGE_XPOS
+            target[X_AXIS]= FILAMENTCHANGE_XPOS ;
+          #endif
+        }
+        if(code_seen('Y')) 
+        {
+          target[Y_AXIS]= code_value();
+        }
+        else
+        {
+          #ifdef FILAMENTCHANGE_YPOS
+            target[Y_AXIS]= FILAMENTCHANGE_YPOS ;
+          #endif
+        }
+        
+        plan_buffer_line(target[X_AXIS], target[Y_AXIS], target[Z_AXIS], target[E_AXIS], feedrate/60, active_extruder);
+        
+        if(code_seen('L'))
+        {
+          target[E_AXIS]+= code_value();
+        }
+        else
+        {
+          #ifdef FILAMENTCHANGE_FINALRETRACT
+            target[E_AXIS]+= FILAMENTCHANGE_FINALRETRACT ;
+          #endif
+        }
+        
+        plan_buffer_line(target[X_AXIS], target[Y_AXIS], target[Z_AXIS], target[E_AXIS], feedrate/60, active_extruder);
+        
+        //finish moves
+        st_synchronize();
+        //disable extruder steppers so filament can be removed
+        disable_e0();
+        disable_e1();
+        disable_e2();
+        delay(100);
+        LCD_ALERTMESSAGEPGM(MSG_FILAMENTCHANGE);
+        uint8_t cnt=0;
+        while(!LCD_CLICKED){
+          cnt++;
+          manage_heater();
+          manage_inactivity();
+          lcd_update();
+          
+          #if BEEPER > -1
+          if(cnt==0)
+          {
+            SET_OUTPUT(BEEPER);
+            
+            WRITE(BEEPER,HIGH);
+            delay(3);
+            WRITE(BEEPER,LOW);
+            delay(3);
+          }
+          #endif
+        }
+        
+        //return to normal
+        if(code_seen('L')) 
+        {
+          target[E_AXIS]+= -code_value();
+        }
+        else
+        {
+          #ifdef FILAMENTCHANGE_FINALRETRACT
+            target[E_AXIS]+=(-1)*FILAMENTCHANGE_FINALRETRACT ;
+          #endif
+        }
+        current_position[E_AXIS]=target[E_AXIS]; //the long retract of L is compensated by manual filament feeding
+        plan_set_e_position(current_position[E_AXIS]);
+        plan_buffer_line(target[X_AXIS], target[Y_AXIS], target[Z_AXIS], target[E_AXIS], feedrate/60, active_extruder); //should do nothing
+        plan_buffer_line(lastpos[X_AXIS], lastpos[Y_AXIS], target[Z_AXIS], target[E_AXIS], feedrate/60, active_extruder); //move xy back
+        plan_buffer_line(lastpos[X_AXIS], lastpos[Y_AXIS], lastpos[Z_AXIS], target[E_AXIS], feedrate/60, active_extruder); //move z back
+        plan_buffer_line(lastpos[X_AXIS], lastpos[Y_AXIS], lastpos[Z_AXIS], lastpos[E_AXIS], feedrate/60, active_extruder); //final untretract
+    }
+    break;
+    #endif //FILAMENTCHANGEENABLE    
+    case 907: // M907 Set digital trimpot motor current using axis codes.
     {
       #if DIGIPOTSS_PIN > -1
         for(int i=0;i<=NUM_AXIS;i++) if(code_seen(axis_codes[i])) digipot_current(i,code_value());
@@ -1771,7 +1908,7 @@ void process_commands()
         if(code_seen('S')) for(int i=0;i<=4;i++) digipot_current(i,code_value());
       #endif
     }
-    case 908: // Control digital trimpot directly.
+    case 908: // M908 Control digital trimpot directly.
     {
       #if DIGIPOTSS_PIN > -1
         uint8_t channel,current;
@@ -1781,7 +1918,7 @@ void process_commands()
       #endif
     }
     break;
-    case 350: // Set microstepping mode. Warning: Steps per unit remains unchanged. S code sets stepping mode for all drivers.
+    case 350: // M350 Set microstepping mode. Warning: Steps per unit remains unchanged. S code sets stepping mode for all drivers.
     {
       #if X_MS1_PIN > -1
         if(code_seen('S')) for(int i=0;i<=4;i++) microstep_mode(i,code_value()); 
@@ -1791,7 +1928,7 @@ void process_commands()
       #endif
     }
     break;
-    case 351: // Toggle MS1 MS2 pins directly, S# determines MS1 or MS2, X# sets the pin high/low.
+    case 351: // M351 Toggle MS1 MS2 pins directly, S# determines MS1 or MS2, X# sets the pin high/low.
     {
       #if X_MS1_PIN > -1
       if(code_seen('S')) switch((int)code_value())
@@ -1809,8 +1946,9 @@ void process_commands()
       #endif
     }
     break;
-    case 999: // Restart after being stopped
+    case 999: // M999: Restart after being stopped
       Stopped = false;
+      lcd_reset_alert_level();
       gcode_LastN = Stopped_gcode_LastN;
       FlushSerialRequestResend();
     break;
@@ -2114,7 +2252,7 @@ void setPwmFrequency(uint8_t pin, int val)
     #if defined(TCCR0A)
     case TIMER0A:
     case TIMER0B:
-//         TCCR0B &= ~(CS00 | CS01 | CS02);
+//         TCCR0B &= ~(_BV(CS00) | _BV(CS01) | _BV(CS02));
 //         TCCR0B |= val;
          break;
     #endif
@@ -2122,7 +2260,7 @@ void setPwmFrequency(uint8_t pin, int val)
     #if defined(TCCR1A)
     case TIMER1A:
     case TIMER1B:
-//         TCCR1B &= ~(CS10 | CS11 | CS12);
+//         TCCR1B &= ~(_BV(CS10) | _BV(CS11) | _BV(CS12));
 //         TCCR1B |= val;
          break;
     #endif
@@ -2130,7 +2268,7 @@ void setPwmFrequency(uint8_t pin, int val)
     #if defined(TCCR2)
     case TIMER2:
     case TIMER2:
-         TCCR2 &= ~(CS10 | CS11 | CS12);
+         TCCR2 &= ~(_BV(CS10) | _BV(CS11) | _BV(CS12));
          TCCR2 |= val;
          break;
     #endif
@@ -2138,7 +2276,7 @@ void setPwmFrequency(uint8_t pin, int val)
     #if defined(TCCR2A)
     case TIMER2A:
     case TIMER2B:
-         TCCR2B &= ~(CS20 | CS21 | CS22);
+         TCCR2B &= ~(_BV(CS20) | _BV(CS21) | _BV(CS22));
          TCCR2B |= val;
          break;
     #endif
@@ -2147,7 +2285,7 @@ void setPwmFrequency(uint8_t pin, int val)
     case TIMER3A:
     case TIMER3B:
     case TIMER3C:
-         TCCR3B &= ~(CS30 | CS31 | CS32);
+         TCCR3B &= ~(_BV(CS30) | _BV(CS31) | _BV(CS32));
          TCCR3B |= val;
          break;
     #endif
@@ -2156,7 +2294,7 @@ void setPwmFrequency(uint8_t pin, int val)
     case TIMER4A:
     case TIMER4B:
     case TIMER4C:
-         TCCR4B &= ~(CS40 | CS41 | CS42);
+         TCCR4B &= ~(_BV(CS40) | _BV(CS41) | _BV(CS42));
          TCCR4B |= val;
          break;
    #endif
@@ -2165,7 +2303,7 @@ void setPwmFrequency(uint8_t pin, int val)
     case TIMER5A:
     case TIMER5B:
     case TIMER5C:
-         TCCR5B &= ~(CS50 | CS51 | CS52);
+         TCCR5B &= ~(_BV(CS50) | _BV(CS51) | _BV(CS52));
          TCCR5B |= val;
          break;
    #endif
