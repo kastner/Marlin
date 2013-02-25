@@ -9,7 +9,7 @@
 //Implementation of an idea by Prof Braino to inform user that any changes made
 //to this build by the user have been successfully uploaded into firmware.
 #define STRING_VERSION_CONFIG_H __DATE__ " " __TIME__ // build date and time
-#define STRING_CONFIG_H_AUTHOR "(jcrocholl, deltabot)" //Who made the changes.
+#define STRING_CONFIG_H_AUTHOR "(kastner, deltabot)" //Who made the changes.
 
 // SERIAL_PORT selects which serial port should be used for communication with the host.
 // This allows the connection of wireless adapters (for instance) to non-default port pins.
@@ -61,22 +61,35 @@
 // Make delta curves from many straight lines (linear interpolation).
 // This is a trade-off between visible corners (not enough segments)
 // and processor overload (too many expensive sqrt calls).
-#define DELTA_SEGMENTS_PER_SECOND 200
+#define DELTA_SEGMENTS_PER_SECOND 150
 
 // Center-to-center distance of the holes in the diagonal push rods.
-#define DELTA_DIAGONAL_ROD 250.0 // mm
+// #define DELTA_DIAGONAL_ROD 287.0 // mm actual? - this made the model big on x/y, small on z
+// #define DELTA_DIAGONAL_ROD 295.0 // mm - 58.61
+// #define DELTA_DIAGONAL_ROD 288.2 // mm - 50.55
+// #define DELTA_DIAGONAL_ROD 290.0 // - 59.90 x 50.0 x 3.5 REAL CLOSE... sticking with this for printing out the replacement carriage
+#define DELTA_DIAGONAL_ROD 288.5
 
 // Horizontal offset from middle of printer to smooth rod center.
-#define DELTA_SMOOTH_ROD_OFFSET 175.0 // mm
+#define DELTA_SMOOTH_ROD_OFFSET 206.0 // mm
 
 // Horizontal offset of the universal joints on the end effector.
-#define DELTA_EFFECTOR_OFFSET 33.0 // mm
+// #define DELTA_EFFECTOR_OFFSET 32.0 // mm
+#define DELTA_EFFECTOR_OFFSET 42.0 // mm
 
 // Horizontal offset of the universal joints on the carriages.
-#define DELTA_CARRIAGE_OFFSET 18.0 // mm
+// #define DELTA_CARRIAGE_OFFSET 26.0 // mm
+#define DELTA_CARRIAGE_OFFSET 25.0 // mm
+
+// In order to correct low-center, DELTA_RADIUS must be increased.
+// In order to correct high-center, DELTA_RADIUS must be decreased.
+// For convex/concave -- -20->-30 makes the center go DOWN
+// #define DELTA_FUDGE -27.4 // 152.4 total radius
+#define DELTA_FUDGE -6.3
 
 // Effective horizontal distance bridged by diagonal push rods.
-#define DELTA_RADIUS (DELTA_SMOOTH_ROD_OFFSET-DELTA_EFFECTOR_OFFSET-DELTA_CARRIAGE_OFFSET)
+#define DELTA_RADIUS (DELTA_SMOOTH_ROD_OFFSET-DELTA_EFFECTOR_OFFSET-DELTA_CARRIAGE_OFFSET-DELTA_FUDGE)
+// #define DELTA_RADIUS (DELTA_SMOOTH_ROD_OFFSET-DELTA_EFFECTOR_OFFSET-DELTA_CARRIAGE_OFFSET-DELTA_FUDGE)
 
 // Effective X/Y positions of the three vertical towers.
 #define SIN_60 0.8660254037844386
@@ -161,9 +174,9 @@
 
 // If you are using a preconfigured hotend then you can use one of the value sets by uncommenting it
 // Ultimaker
-    #define  DEFAULT_Kp 30.5
-    #define  DEFAULT_Ki 1.8  
-    #define  DEFAULT_Kd 214.88
+//    #define  DEFAULT_Kp 30.5
+//    #define  DEFAULT_Ki 1.8  
+//    #define  DEFAULT_Kd 214.88
 
 // Makergear
 //    #define  DEFAULT_Kp 7.0
@@ -174,6 +187,12 @@
 //    #define  DEFAULT_Kp 63.0
 //    #define  DEFAULT_Ki 2.25
 //    #define  DEFAULT_Kd 440
+
+// J-Head
+    #define DEFAULT_Kp 25.54
+    #define DEFAULT_Ki 1.75
+    #define DEFAULT_Kd 93.30
+
 #endif // PIDTEMP
 
 // Bed Temperature Control
@@ -308,10 +327,10 @@ const bool Z_ENDSTOPS_INVERTING = false; // set to true to invert the logic of t
 #define min_software_endstops true //If true, axis won't move to coordinates less than HOME_POS.
 #define max_software_endstops true  //If true, axis won't move to coordinates greater than the defined lengths below.
 // Travel limits after homing
-#define X_MAX_POS 90
-#define X_MIN_POS -90
-#define Y_MAX_POS 90
-#define Y_MIN_POS -90
+#define X_MAX_POS 110
+#define X_MIN_POS -110
+#define Y_MAX_POS 110
+#define Y_MIN_POS -110
 #define Z_MAX_POS MANUAL_Z_HOME_POS
 #define Z_MIN_POS 0
 
@@ -327,11 +346,24 @@ const bool Z_ENDSTOPS_INVERTING = false; // set to true to invert the logic of t
 // For deltabots this means top and center of the cartesian print volume.
 #define MANUAL_X_HOME_POS 0
 #define MANUAL_Y_HOME_POS 0
-#define MANUAL_Z_HOME_POS 402  // Distance between nozzle and print surface after homing.
+//#define MANUAL_Z_HOME_POS 196.6  // (ubis) Distance between nozzle and print surface after homing.
+// #define MANUAL_Z_HOME_POS 203.1  // (buda) Distance between nozzle and print surface after homing.
+// #define MANUAL_Z_HOME_POS 204.5  // (buda - glass) Distance between nozzle and print surface after homing.
+// #define MANUAL_Z_HOME_POS 197.85  // (buda - glass -- microwave -- bigger step) Distance between nozzle and print surface after homing.
+// #define MANUAL_Z_HOME_POS 202.2  // (buda - glass -- microwave) Distance between nozzle and print surface after homing.
+// #define MANUAL_Z_HOME_POS 224.0  // (buda - glass -- microwave) Distance between nozzle and print surface after homing.
+// #define MANUAL_Z_HOME_POS 208.98  // (j-head - glass -- microwave)
+// #define MANUAL_Z_HOME_POS 208.25  // (j-head - glass -- small -- sometimes it starts at 0...)
+// #define MANUAL_Z_HOME_POS 195.37  // (j-head - glass -- small -- mounted under)
+//#define MANUAL_Z_HOME_POS 165.37  // (j-head - bigglass -- long arms)
+// #define MANUAL_Z_HOME_POS 165.5  // (j-head - bigglass -- long arms)
+// #define MANUAL_Z_HOME_POS 165.6  // (j-head - bigglass -- long arms)
+// #define MANUAL_Z_HOME_POS 166.7 // 166.7
+#define MANUAL_Z_HOME_POS 126.7 // 166.7
 
 //// MOVEMENT SETTINGS
 #define NUM_AXIS 4 // The axis order in all axis related arrays is X, Y, Z, E
-#define HOMING_FEEDRATE {100*60, 100*60, 100*60, 0}  // set the homing speeds (mm/min)
+#define HOMING_FEEDRATE {500*60, 500*60, 500*60, 0}  // set the homing speeds (mm/min)
 
 // default settings 
 // useful constants
@@ -359,17 +391,24 @@ const bool Z_ENDSTOPS_INVERTING = false; // set to true to invert the logic of t
 #define AXIS_STEPS_PER_UNIT_Z (STEPS_PER_REVOLUTION_Z / PITCH_OF_Z_ROD)
 #define AXIS_STEPS_PER_UNIT_E (STEPS_PER_REVOLUTION_E * EXTRUDER_GEAR_RATIO / (PINCH_WHEEL_DIAMETER * PI))
 
-#define DEFAULT_AXIS_STEPS_PER_UNIT   {40, 40, 40, 100}
-#define DEFAULT_MAX_FEEDRATE          {300, 300, 300, 300}  // (mm/sec)
-#define DEFAULT_MAX_ACCELERATION      {9000, 9000, 9000, 9000}    // X, Y, Z, E maximum start speed for accelerated moves.
+#define DELTA_AXIS_STEPS              56.333
+// #define DELTA_AXIS_STEPS              55.55 // johann
+// #define DEFAULT_AXIS_STEPS_PER_UNIT   {DELTA_AXIS_STEPS, DELTA_AXIS_STEPS, DELTA_AXIS_STEPS, 100}
+// #define DEFAULT_AXIS_STEPS_PER_UNIT   {DELTA_AXIS_STEPS, DELTA_AXIS_STEPS, DELTA_AXIS_STEPS, 100.8} // 1.75mm airtripper
+#define DEFAULT_AXIS_STEPS_PER_UNIT   {DELTA_AXIS_STEPS, DELTA_AXIS_STEPS, DELTA_AXIS_STEPS, 96.8} // 1.75mm airtripper
+//#define DEFAULT_AXIS_STEPS_PER_UNIT   {DELTA_AXIS_STEPS, DELTA_AXIS_STEPS, DELTA_AXIS_STEPS, 101.30} // 3mm greg's / printrbot
+//#define DEFAULT_AXIS_STEPS_PER_UNIT   {DELTA_AXIS_STEPS, DELTA_AXIS_STEPS, DELTA_AXIS_STEPS, 554.00} // 1.75mm greg's / printrbot
+#define DEFAULT_MAX_FEEDRATE          {500, 500, 500, 60}  // (mm/sec)
 
-#define DEFAULT_ACCELERATION          3000   // X, Y, Z and E max acceleration in mm/s^2 for printing moves
-#define DEFAULT_RETRACT_ACCELERATION  3000   // X, Y, Z and E max acceleration in mm/s^2 for r retracts
+#define DEFAULT_MAX_ACCELERATION      {2000, 2000, 2000, 400}    // X, Y, Z, E maximum start speed for accelerated moves.
+
+#define DEFAULT_ACCELERATION          600   // X, Y, Z and E max acceleration in mm/s^2 for printing moves
+#define DEFAULT_RETRACT_ACCELERATION  400   // X, Y, Z and E max acceleration in mm/s^2 for r retracts
 
 // 
 #define DEFAULT_XYJERK                20.0   // (mm/sec)
 #define DEFAULT_ZJERK                 20.0   // (mm/sec)
-#define DEFAULT_EJERK                 20.0   // (mm/sec)
+#define DEFAULT_EJERK                 10.0   // (mm/sec)
 
 //===========================================================================
 //=============================Additional Features===========================
@@ -381,21 +420,21 @@ const bool Z_ENDSTOPS_INVERTING = false; // set to true to invert the logic of t
 // M501 - reads parameters from EEPROM (if you need reset them after you changed them temporarily).  
 // M502 - reverts to the default "factory settings".  You still need to store them in EEPROM afterwards if you want to.
 //define this to enable eeprom support
-//#define EEPROM_SETTINGS
+#define EEPROM_SETTINGS
 //to disable EEPROM Serial responses and decrease program space by ~1700 byte: comment this out:
 // please keep turned on if you can.
-//#define EEPROM_CHITCHAT
+#define EEPROM_CHITCHAT
 
 //LCD and SD support
 //#define ULTRA_LCD  //general lcd support, also 16x2
-//#define SDSUPPORT // Enable SD Card Support in Hardware Console
+#define SDSUPPORT // Enable SD Card Support in Hardware Console
 
 //#define ULTIMAKERCONTROLLER //as available from the ultimaker online store.
 //#define ULTIPANEL  //the ultipanel as on thingiverse
 
 // The RepRapDiscount Smart Controller (white PCB)
 // http://reprap.org/wiki/RepRapDiscount_Smart_Controller
-//#define REPRAP_DISCOUNT_SMART_CONTROLLER
+#define REPRAP_DISCOUNT_SMART_CONTROLLER
 
 // The GADGETS3D G3D LCD/SD Controller (blue PCB)
 // http://reprap.org/wiki/RAMPS_1.3/1.4_GADGETS3D_Shield_with_Panel
@@ -408,8 +447,8 @@ const bool Z_ENDSTOPS_INVERTING = false; // set to true to invert the logic of t
 #endif 
 
 // Preheat Constants
-#define PLA_PREHEAT_HOTEND_TEMP 180 
-#define PLA_PREHEAT_HPB_TEMP 70
+#define PLA_PREHEAT_HOTEND_TEMP 190 
+#define PLA_PREHEAT_HPB_TEMP 0
 #define PLA_PREHEAT_FAN_SPEED 255		// Insert Value between 0 and 255
 
 #define ABS_PREHEAT_HOTEND_TEMP 240
