@@ -658,33 +658,84 @@ static void set_bed_level_equation(float z_at_xLeft_yFront, float z_at_xRight_yF
     plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
 }
 
+float delta_z_from_x_y(float x, float y)
+{
+    return st_get_position_mm(Z_AXIS)
+        - (sqrt(sq(DELTA_DIAGONAL_ROD)
+        - sq(DELTA_TOWER3_X - x)
+        - sq(DELTA_TOWER3_Y - y)));
+}
+
+void print_pos(char *msg)
+{
+      // --------------------------------------------
+      SERIAL_PROTOCOL(msg);
+      SERIAL_PROTOCOLPGM("\n\t cX: ")
+      SERIAL_PROTOCOL(current_position[X_AXIS]);
+      SERIAL_PROTOCOLPGM(" cY:");
+      SERIAL_PROTOCOL(current_position[Y_AXIS]);
+      SERIAL_PROTOCOLPGM(" cZ:");
+      SERIAL_PROTOCOL(current_position[Z_AXIS]);
+      SERIAL_PROTOCOLPGM(" cE:");
+      SERIAL_PROTOCOL(current_position[E_AXIS]);
+
+      SERIAL_PROTOCOLPGM("  |  Motor count xMotor: ");
+      SERIAL_PROTOCOL(float(st_get_position(X_AXIS))/axis_steps_per_unit[X_AXIS]);
+      SERIAL_PROTOCOLPGM(" yMotor: ");
+      SERIAL_PROTOCOL(float(st_get_position(Y_AXIS))/axis_steps_per_unit[Y_AXIS]);
+      SERIAL_PROTOCOLPGM(" zMotor: ");
+      SERIAL_PROTOCOL(float(st_get_position(Z_AXIS))/axis_steps_per_unit[Z_AXIS]);
+
+      SERIAL_PROTOCOLLN("");
+      // --------------------------------------------
+}
+
 static void run_z_probe() {
     plan_bed_level_matrix.set_to_identity();
     feedrate = homing_feedrate[Z_AXIS];
 
     // move down until you find the bed
     float zPosition = -10;
-    plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], zPosition, current_position[E_AXIS], feedrate/60, active_extruder);
+    current_position[Z_AXIS] = zPosition;
+    calculate_delta(current_position);
+    plan_buffer_line(delta[X_AXIS], delta[Y_AXIS], delta[Z_AXIS],
+                     current_position[E_AXIS], feedrate/60,
+                     active_extruder);
+
     st_synchronize();
 
-        // we have to let the planner know where we are right now as it is not where we said to go.
-    zPosition = st_get_position_mm(Z_AXIS);
-    plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], zPosition, current_position[E_AXIS]);
+    zPosition = delta_z_from_x_y(current_position[X_AXIS], current_position[Y_AXIS]);
+    current_position[Z_AXIS] = zPosition;
+    calculate_delta(current_position);
+    plan_set_position(delta[X_AXIS], delta[Y_AXIS], delta[Z_AXIS], current_position[E_AXIS]);
 
     // move up the retract distance
-    zPosition += home_retract_mm(Z_AXIS);
-    plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], zPosition, current_position[E_AXIS], feedrate/60, active_extruder);
+    zPosition = current_position[Z_AXIS] + home_retract_mm(Z_AXIS);
+    current_position[Z_AXIS] = zPosition;
+    calculate_delta(current_position);
+
+    // print_pos("after setting current z, before plan_buffer_line");
+
+    plan_buffer_line(delta[X_AXIS], delta[Y_AXIS], delta[Z_AXIS],
+                     current_position[E_AXIS], feedrate/600,
+                     active_extruder);
+
     st_synchronize();
 
     // move back down slowly to find bed
     feedrate = homing_feedrate[Z_AXIS]/4; 
-    zPosition -= home_retract_mm(Z_AXIS) * 2;
-    plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], zPosition, current_position[E_AXIS], feedrate/60, active_extruder);
-    st_synchronize();
+    zPosition -= home_retract_mm(Z_AXIS) * 3;
+    current_position[Z_AXIS] = zPosition;
+    calculate_delta(current_position);
+    plan_buffer_line(delta[X_AXIS], delta[Y_AXIS], delta[Z_AXIS], current_position[E_AXIS], feedrate/80, active_extruder);
 
-    current_position[Z_AXIS] = st_get_position_mm(Z_AXIS);
+    st_synchronize();
+    current_position[Z_AXIS] = delta_z_from_x_y(current_position[X_AXIS], current_position[Y_AXIS]);
+
     // make sure the planner knows where we are as it may be a bit different than we last said to move to
-    plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
+    //plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
+    calculate_delta(current_position);
+    plan_set_position(delta[X_AXIS], delta[Y_AXIS], delta[Z_AXIS], current_position[E_AXIS]);
 }
 
 static void do_blocking_move_to(float x, float y, float z) {
@@ -695,7 +746,8 @@ static void do_blocking_move_to(float x, float y, float z) {
     current_position[X_AXIS] = x;
     current_position[Y_AXIS] = y;
     current_position[Z_AXIS] = z;
-    plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], feedrate/60, active_extruder);
+    calculate_delta(current_position);
+    plan_buffer_line(delta[X_AXIS], delta[Y_AXIS], delta[Z_AXIS], current_position[E_AXIS], feedrate/60, active_extruder);
     st_synchronize();
 
     feedrate = oldFeedRate;
@@ -777,21 +829,23 @@ static void homeaxis(int axis) {
     feedrate = homing_feedrate[axis];
     plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder);
     st_synchronize();
-   
+
     current_position[axis] = 0;
     plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
     destination[axis] = -home_retract_mm(axis) * home_dir(axis);
     plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder);
     st_synchronize();
-   
+
     destination[axis] = 2*home_retract_mm(axis) * home_dir(axis);
     feedrate = homing_feedrate[axis]/2 ; 
     plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder);
     st_synchronize();
-   
+
     axis_is_at_home(axis);					
+
     destination[axis] = current_position[axis];
     feedrate = 0.0;
+
     endstops_hit_on_purpose();
   }
 }
@@ -921,11 +975,11 @@ void process_commands()
       if((home_all_axis) || (code_seen(axis_codes[Y_AXIS]))) {
         HOMEAXIS(Y);
       }
-      
+
       if((home_all_axis) || (code_seen(axis_codes[Z_AXIS]))) {
         HOMEAXIS(Z);
       }
-      
+
       if(code_seen(axis_codes[X_AXIS])) 
       {
         if(code_value_long() != 0) {
@@ -944,9 +998,10 @@ void process_commands()
           current_position[Z_AXIS]=code_value()+add_homeing[2];
         }
       }
+
       calculate_delta(current_position);
       plan_set_position(delta[X_AXIS], delta[Y_AXIS], delta[Z_AXIS], current_position[E_AXIS]);
-      
+
       #ifdef ENDSTOPS_ONLY_FOR_HOMING
         enable_endstops(false);
       #endif
@@ -960,17 +1015,21 @@ void process_commands()
 #ifdef ENABLE_AUTO_BED_LEVELING
         // TODO: (Z_MIN_PIN > -1) should also be true.  I don't know the prefered way to ensure this.
         {
-            st_synchronize();
-            // make sure the bed_level_rotation_matrix is identity or the planner will get it incorectly
-            //vector_3 corrected_position = plan_get_position_mm();
-            //corrected_position.debug("position before G29");
+            //#ifdef defined(DELTA_DIAGONAL_ROD)
+            static float positions[3][2] = {
+              {(DELTA_TOWER1_X + DELTA_TOWER2_X)/2, (DELTA_TOWER1_Y + DELTA_TOWER2_Y)/2 + 40},
+              {(DELTA_TOWER2_X + DELTA_TOWER3_X)/2 + 20, (DELTA_TOWER2_Y + DELTA_TOWER3_Y)/2 + 20},
+              {(DELTA_TOWER3_X + DELTA_TOWER1_X)/2 - 20, (DELTA_TOWER3_Y + DELTA_TOWER1_Y)/2 - 20}
+            };
+            //#else
+            //static float positions[3][2] = {
+            //  {LEFT_PROBE_BED_POSITION, BACK_PROBE_BED_POSITION},
+            //  {LEFT_PROBE_BED_POSITION, FRONT_PROBE_BED_POSITION},
+            //  {RIGHT_PROBE_BED_POSITION, FRONT_PROBE_BED_POSITION}
+            //};
+            //#endif
+            float z_at_positions[3];
             plan_bed_level_matrix.set_to_identity();
-            vector_3 uncorrected_position = plan_get_position();
-            //uncorrected_position.debug("position durring G29");
-            current_position[X_AXIS] = uncorrected_position.x;
-            current_position[Y_AXIS] = uncorrected_position.y;
-            current_position[Z_AXIS] = uncorrected_position.z;
-            plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
             setup_for_endstop_move();
 
 #if defined(ENABLE_AUTO_BED_LEVELING) && defined(LOWER_AND_RAISE_Z_PROBE)
@@ -979,49 +1038,16 @@ void process_commands()
 
             feedrate = homing_feedrate[Z_AXIS];
 
-            // prob 1
-            do_blocking_move_to(current_position[X_AXIS], current_position[Y_AXIS], 40);
-            do_blocking_move_to(LEFT_PROBE_BED_POSITION - X_PROBE_OFFSET_FROM_EXTRUDER, BACK_PROBE_BED_POSITION - Y_PROBE_OFFSET_FROM_EXTRUDER, current_position[Z_AXIS]);
-            run_z_probe();
-            float z_at_xLeft_yBack = current_position[Z_AXIS];
-
-            SERIAL_PROTOCOLPGM("Bed x: ");
-            SERIAL_PROTOCOL(LEFT_PROBE_BED_POSITION);
-            SERIAL_PROTOCOLPGM(" y: ");
-            SERIAL_PROTOCOL(BACK_PROBE_BED_POSITION);
-            SERIAL_PROTOCOLPGM(" z: ");
-            SERIAL_PROTOCOL(current_position[Z_AXIS]);
-            SERIAL_PROTOCOLPGM("\n");
-
-            // prob 2
-            do_blocking_move_to(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS] + 10);
-            do_blocking_move_to(LEFT_PROBE_BED_POSITION - X_PROBE_OFFSET_FROM_EXTRUDER, FRONT_PROBE_BED_POSITION - Y_PROBE_OFFSET_FROM_EXTRUDER, current_position[Z_AXIS]);
-            run_z_probe();
-            float z_at_xLeft_yFront = current_position[Z_AXIS];
-
-            SERIAL_PROTOCOLPGM("Bed x: ");
-            SERIAL_PROTOCOL(LEFT_PROBE_BED_POSITION);
-            SERIAL_PROTOCOLPGM(" y: ");
-            SERIAL_PROTOCOL(FRONT_PROBE_BED_POSITION);
-            SERIAL_PROTOCOLPGM(" z: ");
-            SERIAL_PROTOCOL(current_position[Z_AXIS]);
-            SERIAL_PROTOCOLPGM("\n");
-
-            // prob 3
-            do_blocking_move_to(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS] + 10);
-            // the current position will be updated by the blocking move so the head will not lower on this next call.
-            do_blocking_move_to(RIGHT_PROBE_BED_POSITION - X_PROBE_OFFSET_FROM_EXTRUDER, FRONT_PROBE_BED_POSITION - Y_PROBE_OFFSET_FROM_EXTRUDER, current_position[Z_AXIS]);
-            run_z_probe();
-            float z_at_xRight_yFront = current_position[Z_AXIS];
-
-            SERIAL_PROTOCOLPGM("Bed x: ");
-            SERIAL_PROTOCOL(RIGHT_PROBE_BED_POSITION);
-            SERIAL_PROTOCOLPGM(" y: ");
-            SERIAL_PROTOCOL(FRONT_PROBE_BED_POSITION);
-            SERIAL_PROTOCOLPGM(" z: ");
-            SERIAL_PROTOCOL(current_position[Z_AXIS]);
-            SERIAL_PROTOCOLPGM("\n");
-
+            for (int i=0; i<3; i++) {
+                // Z up
+                do_blocking_move_to(current_position[X_AXIS], current_position[Y_AXIS], 40);
+                // print_pos("After First move");
+                // move to probe-point
+                do_blocking_move_to(positions[i][0] - X_PROBE_OFFSET_FROM_EXTRUDER, positions[i][1] - Y_PROBE_OFFSET_FROM_EXTRUDER, current_position[Z_AXIS]);
+                run_z_probe();
+                z_at_positions[i] = delta_z_from_x_y(positions[i][0], positions[i][1]);
+                // print_pos("----------------\nDONE WITH PROBE THERE");
+            }
             clean_up_after_endstop_move();
 
 #if defined(ENABLE_AUTO_BED_LEVELING) && defined(LOWER_AND_RAISE_Z_PROBE)
@@ -1035,7 +1061,7 @@ void process_commands()
             }
 #endif // #if defined(ENABLE_AUTO_BED_LEVELING) && defined(LOWER_AND_RAISE_Z_PROBE)
 
-            set_bed_level_equation(z_at_xLeft_yFront, z_at_xRight_yFront, z_at_xLeft_yBack);
+            set_bed_level_equation(z_at_positions[0], z_at_positions[1], z_at_positions[2]);
         }
 #endif // ENABLE_AUTO_BED_LEVELING
         break;
