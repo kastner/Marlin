@@ -320,8 +320,8 @@ const bool Z_ENDSTOPS_INVERTING = false; // set to true to invert the logic of t
 
   // these are the offsets to the prob relative to the extruder tip
   #define X_PROBE_OFFSET_FROM_EXTRUDER 6
-  #define Y_PROBE_OFFSET_FROM_EXTRUDER 6
-  #define Z_PROBE_OFFSET_FROM_EXTRUDER -2
+  #define Y_PROBE_OFFSET_FROM_EXTRUDER 30
+  #define Z_PROBE_OFFSET_FROM_EXTRUDER -3
 #endif
 
 #define min_software_endstops true //If true, axis won't move to coordinates less than HOME_POS.
@@ -359,11 +359,12 @@ const bool Z_ENDSTOPS_INVERTING = false; // set to true to invert the logic of t
 // #define MANUAL_Z_HOME_POS 165.5  // (j-head - bigglass -- long arms)
 // #define MANUAL_Z_HOME_POS 165.6  // (j-head - bigglass -- long arms)
 // #define MANUAL_Z_HOME_POS 166.7 // 166.7
-#define MANUAL_Z_HOME_POS 126.7 // 166.7
+// #define MANUAL_Z_HOME_POS 126.7 // 166.7 -- for testing probe
+#define MANUAL_Z_HOME_POS 146.7 // 166.7
 
 //// MOVEMENT SETTINGS
 #define NUM_AXIS 4 // The axis order in all axis related arrays is X, Y, Z, E
-#define HOMING_FEEDRATE {500*60, 500*60, 500*60, 0}  // set the homing speeds (mm/min)
+#define HOMING_FEEDRATE {100*60, 100*60, 100*60, 0}  // set the homing speeds (mm/min)
 
 // default settings 
 // useful constants
@@ -398,7 +399,7 @@ const bool Z_ENDSTOPS_INVERTING = false; // set to true to invert the logic of t
 #define DEFAULT_AXIS_STEPS_PER_UNIT   {DELTA_AXIS_STEPS, DELTA_AXIS_STEPS, DELTA_AXIS_STEPS, 96.8} // 1.75mm airtripper
 //#define DEFAULT_AXIS_STEPS_PER_UNIT   {DELTA_AXIS_STEPS, DELTA_AXIS_STEPS, DELTA_AXIS_STEPS, 101.30} // 3mm greg's / printrbot
 //#define DEFAULT_AXIS_STEPS_PER_UNIT   {DELTA_AXIS_STEPS, DELTA_AXIS_STEPS, DELTA_AXIS_STEPS, 554.00} // 1.75mm greg's / printrbot
-#define DEFAULT_MAX_FEEDRATE          {500, 500, 500, 60}  // (mm/sec)
+#define DEFAULT_MAX_FEEDRATE          {100, 100, 100, 60}  // (mm/sec)
 
 #define DEFAULT_MAX_ACCELERATION      {2000, 2000, 2000, 400}    // X, Y, Z, E maximum start speed for accelerated moves.
 
@@ -407,7 +408,7 @@ const bool Z_ENDSTOPS_INVERTING = false; // set to true to invert the logic of t
 
 // 
 #define DEFAULT_XYJERK                20.0   // (mm/sec)
-#define DEFAULT_ZJERK                 20.0   // (mm/sec)
+#define DEFAULT_ZJERK                 5.0   // (mm/sec)
 #define DEFAULT_EJERK                 10.0   // (mm/sec)
 
 //===========================================================================
