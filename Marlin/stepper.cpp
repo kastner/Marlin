@@ -291,17 +291,6 @@ FORCE_INLINE void trapezoid_generator_reset() {
   acc_step_rate = current_block->initial_rate;
   acceleration_time = calc_timer(acc_step_rate);
   OCR1A = acceleration_time;
-  
-//    SERIAL_ECHO_START;
-//    SERIAL_ECHOPGM("advance :");
-//    SERIAL_ECHO(current_block->advance/256.0);
-//    SERIAL_ECHOPGM("advance rate :");
-//    SERIAL_ECHO(current_block->advance_rate/256.0);
-//    SERIAL_ECHOPGM("initial advance :");
-//  SERIAL_ECHO(current_block->initial_advance/256.0);
-//    SERIAL_ECHOPGM("final advance :");
-//    SERIAL_ECHOLN(current_block->final_advance/256.0);
-    
 }
 
 // "The Stepper Driver Interrupt" - This timer interrupt is the workhorse.  
