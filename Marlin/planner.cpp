@@ -497,6 +497,29 @@ void check_axes_activity()
 #endif
 }
 
+void pprint_pos(char *msg)
+{
+            // --------------------------------------------
+      SERIAL_PROTOCOL(msg);
+      SERIAL_PROTOCOLPGM("\n\t pX: ")
+      SERIAL_PROTOCOL(position[X_AXIS]);
+      SERIAL_PROTOCOLPGM(" pY:");
+      SERIAL_PROTOCOL(position[Y_AXIS]);
+      SERIAL_PROTOCOLPGM(" pZ:");
+      SERIAL_PROTOCOL(position[Z_AXIS]);
+      SERIAL_PROTOCOLPGM(" pE:");      
+      SERIAL_PROTOCOL(position[E_AXIS]);
+      
+      SERIAL_PROTOCOLPGM("  |  Motor count xMotor: ");
+      SERIAL_PROTOCOL(float(st_get_position(X_AXIS))/axis_steps_per_unit[X_AXIS]);
+      SERIAL_PROTOCOLPGM(" yMotor: ");
+      SERIAL_PROTOCOL(float(st_get_position(Y_AXIS))/axis_steps_per_unit[Y_AXIS]);
+      SERIAL_PROTOCOLPGM(" zMotor: ");
+      SERIAL_PROTOCOL(float(st_get_position(Z_AXIS))/axis_steps_per_unit[Z_AXIS]);
+      
+      SERIAL_PROTOCOLLN("");
+      // --------------------------------------------
+}
 
 float junction_deviation = 0.1;
 // Add a new linear movement to the buffer. steps_x, _y and _z is the absolute position in 
@@ -528,6 +551,17 @@ void plan_buffer_line(float x, float y, float z, const float &e, float feed_rate
   target[Y_AXIS] = lround(y*axis_steps_per_unit[Y_AXIS]);
   target[Z_AXIS] = lround(z*axis_steps_per_unit[Z_AXIS]);     
   target[E_AXIS] = lround(e*axis_steps_per_unit[E_AXIS]);
+  // pprint_pos("In plan buffer line... just set targets");
+  // SERIAL_ECHOPGM("targets m1: ");
+  // SERIAL_ECHO(target[X_AXIS]);
+  // SERIAL_ECHOPGM(" m2: ");
+  // SERIAL_ECHO(target[Y_AXIS]);
+  // SERIAL_ECHOPGM(" m3: ");
+  // SERIAL_ECHO(target[Z_AXIS]);
+  // SERIAL_ECHOPGM(" m4: ");
+  // SERIAL_ECHO(target[E_AXIS]);
+  // SERIAL_ECHOLN("");
+
 
   #ifdef PREVENT_DANGEROUS_EXTRUDE
   if(target[E_AXIS]!=position[E_AXIS])
@@ -564,6 +598,17 @@ void plan_buffer_line(float x, float y, float z, const float &e, float feed_rate
   block->steps_e *= extrudemultiply;
   block->steps_e /= 100;
   block->step_event_count = max(block->steps_x, max(block->steps_y, max(block->steps_z, block->steps_e)));
+  // pprint_pos("in planner - got the event count");
+  // SERIAL_ECHOPGM("planner, steps.. m1: ");
+  // SERIAL_ECHO(block->steps_x);
+  // SERIAL_ECHOPGM(" m2: ");
+  // SERIAL_ECHO(block->steps_y);
+  // SERIAL_ECHOPGM(" m3: ");
+  // SERIAL_ECHO(block->steps_z);
+  // SERIAL_ECHOPGM(" m4: ");
+  // SERIAL_ECHO(block->steps_e);
+  // SERIAL_ECHOPGM(" max: ");
+  // SERIAL_ECHOLN(block->step_event_count);
 
   // Bail if this is a zero-length block
   if (block->step_event_count <= dropsegments)
@@ -643,6 +688,7 @@ void plan_buffer_line(float x, float y, float z, const float &e, float feed_rate
   if(moves_queued < (BLOCK_BUFFER_SIZE * 0.5) && moves_queued > 1)
     feed_rate = feed_rate*moves_queued / (BLOCK_BUFFER_SIZE * 0.5); 
 #endif
+  // pprint_pos("In planner, but lost");
 
 #ifdef SLOWDOWN
   //  segment time im micro seconds

@@ -666,18 +666,44 @@ float delta_z_from_x_y(float x, float y)
         - sq(DELTA_TOWER3_Y - y)));
 }
 
+void print_pos(char *msg)
+{
+            // --------------------------------------------
+      SERIAL_PROTOCOL(msg);
+      SERIAL_PROTOCOLPGM("\n\t cX: ")
+      SERIAL_PROTOCOL(current_position[X_AXIS]);
+      SERIAL_PROTOCOLPGM(" cY:");
+      SERIAL_PROTOCOL(current_position[Y_AXIS]);
+      SERIAL_PROTOCOLPGM(" cZ:");
+      SERIAL_PROTOCOL(current_position[Z_AXIS]);
+      SERIAL_PROTOCOLPGM(" cE:");      
+      SERIAL_PROTOCOL(current_position[E_AXIS]);
+      
+      SERIAL_PROTOCOLPGM("  |  Motor count xMotor: ");
+      SERIAL_PROTOCOL(float(st_get_position(X_AXIS))/axis_steps_per_unit[X_AXIS]);
+      SERIAL_PROTOCOLPGM(" yMotor: ");
+      SERIAL_PROTOCOL(float(st_get_position(Y_AXIS))/axis_steps_per_unit[Y_AXIS]);
+      SERIAL_PROTOCOLPGM(" zMotor: ");
+      SERIAL_PROTOCOL(float(st_get_position(Z_AXIS))/axis_steps_per_unit[Z_AXIS]);
+      
+      SERIAL_PROTOCOLLN("");
+      // --------------------------------------------
+}
+
 static void run_z_probe() {
     plan_bed_level_matrix.set_to_identity();
-    feedrate = homing_feedrate[Z_AXIS];
+    feedrate = homing_feedrate[Z_AXIS] / 2;
 
     float zPosition;
     float starts[3];
 
+    // print_pos(" at the top of z probe");
+
     zPosition = st_get_position_mm(Z_AXIS);
-    SERIAL_PROTOCOLPGM("Z axis at the start: ");
-    SERIAL_PROTOCOL(zPosition);
-    SERIAL_PROTOCOLPGM(" current_position z: ");
-    SERIAL_PROTOCOLLN(current_position[Z_AXIS]);
+    // SERIAL_PROTOCOLPGM("Z axis at the start: ");
+    // SERIAL_PROTOCOL(zPosition);
+    // SERIAL_PROTOCOLPGM(" current_position z: ");
+    // SERIAL_PROTOCOLLN(current_position[Z_AXIS]);
 
     // move down until you find the bed
     zPosition = -50;
@@ -711,6 +737,9 @@ static void run_z_probe() {
         // we have to let the planner know where we are right now as it is not where we said to go.
     // zPosition = st_get_position_mm(Z_AXIS);
     zPosition = delta_z_from_x_y(current_position[X_AXIS], current_position[Y_AXIS]);
+
+    current_position[Z_AXIS] = zPosition;
+/*
     SERIAL_PROTOCOLPGM("Hit z I think?");
     SERIAL_PROTOCOL(zPosition);
     SERIAL_PROTOCOLPGM(" current z?: ");
@@ -719,10 +748,15 @@ static void run_z_probe() {
     SERIAL_PROTOCOL(st_get_position(Z_AXIS));
     SERIAL_PROTOCOLPGM(" current z st mm: ");
     SERIAL_PROTOCOL(st_get_position_mm(Z_AXIS));
-    // SERIAL_PROTOCOLPGM(" z enstop tristeps: ");
-    // SERIAL_PROTOCOL(endstops_trigsteps[Z_AXIS]);
     SERIAL_PROTOCOLPGM("\n");
 
+    print_pos(" CHECK  after we have z'd down");
+
+    // SERIAL_PROTOCOLPGM(" z enstop tristeps: ");
+    // SERIAL_PROTOCOL(endstops_trigsteps[Z_AXIS]);
+    
+
+    // need to set the position here
 
     SERIAL_ECHOPGM("OK, going to try to inverse");
     // float spots[3];
@@ -734,69 +768,42 @@ static void run_z_probe() {
 
 
     // current_position[Z_AXIS] = zPosition;
-    
+    */
 
     // SERIAL_PROTOCOLPGM("Setting the plan!\n");
-    // plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], zPosition, current_position[E_AXIS]);
+    calculate_delta(current_position);
+    plan_set_position(delta[X_AXIS], delta[Y_AXIS], delta[Z_AXIS], current_position[E_AXIS]);
     // SERIAL_PROTOCOLPGM("Plan be set!\n");
 
-    SERIAL_PROTOCOLPGM("Moving up the retract distance\n");
+    //SERIAL_PROTOCOLPGM("Moving up the retract distance\n");
     // move up the retract distance
-    zPosition += home_retract_mm(Z_AXIS);
+    zPosition = current_position[Z_AXIS] + home_retract_mm(Z_AXIS);
     // destination[X_AXIS] = current_position[X_AXIS];
     // destination[Y_AXIS] = current_position[Y_AXIS];
     // destination[Z_AXIS] = zPosition;
+
+    // can I just increment x, y and z since this is a delta?
+
     current_position[Z_AXIS] = zPosition;
     calculate_delta(current_position);
     
+    // print_pos("after setting current z, before plan_buffer_line");
+
     //plan_buffer_line(delta[X_AXIS], delta[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], feedrate/60, active_extruder);
     plan_buffer_line(delta[X_AXIS], delta[Y_AXIS], delta[Z_AXIS],
                      current_position[E_AXIS], feedrate/600,
                      active_extruder);
 
-      // --------------------------------------------
-      SERIAL_PROTOCOLPGM(" CHECK ! X:");
-      SERIAL_PROTOCOL(current_position[X_AXIS]);
-      SERIAL_PROTOCOLPGM("Y:");
-      SERIAL_PROTOCOL(current_position[Y_AXIS]);
-      SERIAL_PROTOCOLPGM("Z:");
-      SERIAL_PROTOCOL(current_position[Z_AXIS]);
-      SERIAL_PROTOCOLPGM("E:");      
-      SERIAL_PROTOCOL(current_position[E_AXIS]);
-      
-      SERIAL_PROTOCOLPGM(MSG_COUNT_X);
-      SERIAL_PROTOCOL(float(st_get_position(X_AXIS))/axis_steps_per_unit[X_AXIS]);
-      SERIAL_PROTOCOLPGM("Y:");
-      SERIAL_PROTOCOL(float(st_get_position(Y_AXIS))/axis_steps_per_unit[Y_AXIS]);
-      SERIAL_PROTOCOLPGM("Z:");
-      SERIAL_PROTOCOL(float(st_get_position(Z_AXIS))/axis_steps_per_unit[Z_AXIS]);
-      
-      SERIAL_PROTOCOLLN("");
-      // --------------------------------------------
+     // print_pos("after plan_buffer_line");
 
-plan_set_position(float(st_get_position(X_AXIS)), float(st_get_position(Y_AXIS)), float(st_get_position(Z_AXIS)), current_position[E_AXIS]);
+// plan_set_position(float(st_get_position(X_AXIS))/axis_steps_per_unit[X_AXIS], float(st_get_position(Y_AXIS))/axis_steps_per_unit[Y_AXIS], delta[Z_AXIS], float(st_get_position(Z_AXIS))/axis_steps_per_unit[Z_AXIS]);
+
 
     st_synchronize();
 
-      // --------------------------------------------
-      SERIAL_PROTOCOLPGM(" CHECK (after st_synchronize) ! X:");
-      SERIAL_PROTOCOL(current_position[X_AXIS]);
-      SERIAL_PROTOCOLPGM("Y:");
-      SERIAL_PROTOCOL(current_position[Y_AXIS]);
-      SERIAL_PROTOCOLPGM("Z:");
-      SERIAL_PROTOCOL(current_position[Z_AXIS]);
-      SERIAL_PROTOCOLPGM("E:");      
-      SERIAL_PROTOCOL(current_position[E_AXIS]);
-      
-      SERIAL_PROTOCOLPGM(MSG_COUNT_X);
-      SERIAL_PROTOCOL(float(st_get_position(X_AXIS))/axis_steps_per_unit[X_AXIS]);
-      SERIAL_PROTOCOLPGM("Y:");
-      SERIAL_PROTOCOL(float(st_get_position(Y_AXIS))/axis_steps_per_unit[Y_AXIS]);
-      SERIAL_PROTOCOLPGM("Z:");
-      SERIAL_PROTOCOL(float(st_get_position(Z_AXIS))/axis_steps_per_unit[Z_AXIS]);
-      
-      SERIAL_PROTOCOLLN("");
-      // --------------------------------------------
+    //plan_set_position(float(st_get_position(X_AXIS))/axis_steps_per_unit[X_AXIS], float(st_get_position(Y_AXIS))/axis_steps_per_unit[Y_AXIS], delta[Z_AXIS], float(st_get_position(Z_AXIS))/axis_steps_per_unit[Z_AXIS]);
+
+    // print_pos("after st_synchronize");
 
     //plan_set_position(delta[X_AXIS], delta[Y_AXIS], delta[Z_AXIS], current_position[E_AXIS]);
     SERIAL_PROTOCOLPGM("Ok, now gonna move back down slowly!\n");
@@ -811,52 +818,15 @@ plan_set_position(float(st_get_position(X_AXIS)), float(st_get_position(Y_AXIS))
     calculate_delta(current_position);
     plan_buffer_line(delta[X_AXIS], delta[Y_AXIS], delta[Z_AXIS], current_position[E_AXIS], feedrate/80, active_extruder);
 
-      // --------------------------------------------
-      SERIAL_PROTOCOLPGM(" CHECK ! X:");
-      SERIAL_PROTOCOL(current_position[X_AXIS]);
-      SERIAL_PROTOCOLPGM("Y:");
-      SERIAL_PROTOCOL(current_position[Y_AXIS]);
-      SERIAL_PROTOCOLPGM("Z:");
-      SERIAL_PROTOCOL(current_position[Z_AXIS]);
-      SERIAL_PROTOCOLPGM("E:");      
-      SERIAL_PROTOCOL(current_position[E_AXIS]);
-      
-      SERIAL_PROTOCOLPGM(MSG_COUNT_X);
-      SERIAL_PROTOCOL(float(st_get_position(X_AXIS))/axis_steps_per_unit[X_AXIS]);
-      SERIAL_PROTOCOLPGM("Y:");
-      SERIAL_PROTOCOL(float(st_get_position(Y_AXIS))/axis_steps_per_unit[Y_AXIS]);
-      SERIAL_PROTOCOLPGM("Z:");
-      SERIAL_PROTOCOL(float(st_get_position(Z_AXIS))/axis_steps_per_unit[Z_AXIS]);
-      
-      SERIAL_PROTOCOLLN("");
-      // --------------------------------------------
+    // print_pos("After plan buffer line");
 
-plan_set_position(delta[X_AXIS], delta[Y_AXIS], delta[Z_AXIS], current_position[E_AXIS]);
+
+// plan_set_position(delta[X_AXIS], delta[Y_AXIS], delta[Z_AXIS], current_position[E_AXIS]);
 
     st_synchronize();
 
-      // --------------------------------------------
-      SERIAL_PROTOCOLPGM(" CHECK (after st_synchronize) ! X:");
-      SERIAL_PROTOCOL(current_position[X_AXIS]);
-      SERIAL_PROTOCOLPGM("Y:");
-      SERIAL_PROTOCOL(current_position[Y_AXIS]);
-      SERIAL_PROTOCOLPGM("Z:");
-      SERIAL_PROTOCOL(current_position[Z_AXIS]);
-      SERIAL_PROTOCOLPGM("E:");      
-      SERIAL_PROTOCOL(current_position[E_AXIS]);
-      
-      SERIAL_PROTOCOLPGM(MSG_COUNT_X);
-      SERIAL_PROTOCOL(float(st_get_position(X_AXIS))/axis_steps_per_unit[X_AXIS]);
-      SERIAL_PROTOCOLPGM("Y:");
-      SERIAL_PROTOCOL(float(st_get_position(Y_AXIS))/axis_steps_per_unit[Y_AXIS]);
-      SERIAL_PROTOCOLPGM("Z:");
-      SERIAL_PROTOCOL(float(st_get_position(Z_AXIS))/axis_steps_per_unit[Z_AXIS]);
-      
-      SERIAL_PROTOCOLLN("");
-      // --------------------------------------------
-
+    // print_pos("after st_synchronize");
     
-
     current_position[Z_AXIS] = delta_z_from_x_y(current_position[X_AXIS], current_position[Y_AXIS]);
 
     // make sure the planner knows where we are as it may be a bit different than we last said to move to
@@ -963,15 +933,119 @@ static void homeaxis(int axis) {
     plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder);
     st_synchronize();
    
+         // --------------------------------------------
+      SERIAL_PROTOCOLPGM(" CHECK  inside homeaxis! X:");
+      SERIAL_PROTOCOL(current_position[X_AXIS]);
+      SERIAL_PROTOCOLPGM("Y:");
+      SERIAL_PROTOCOL(current_position[Y_AXIS]);
+      SERIAL_PROTOCOLPGM("Z:");
+      SERIAL_PROTOCOL(current_position[Z_AXIS]);
+      SERIAL_PROTOCOLPGM("E:");      
+      SERIAL_PROTOCOL(current_position[E_AXIS]);
+      
+      SERIAL_PROTOCOLPGM(MSG_COUNT_X);
+      SERIAL_PROTOCOL(float(st_get_position(X_AXIS))/axis_steps_per_unit[X_AXIS]);
+      SERIAL_PROTOCOLPGM("Y:");
+      SERIAL_PROTOCOL(float(st_get_position(Y_AXIS))/axis_steps_per_unit[Y_AXIS]);
+      SERIAL_PROTOCOLPGM("Z:");
+      SERIAL_PROTOCOL(float(st_get_position(Z_AXIS))/axis_steps_per_unit[Z_AXIS]);
+      
+      SERIAL_PROTOCOLLN("");
+      // --------------------------------------------
+
     destination[axis] = 2*home_retract_mm(axis) * home_dir(axis);
     feedrate = homing_feedrate[axis]/2 ; 
     plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder);
     st_synchronize();
    
+         // --------------------------------------------
+      SERIAL_PROTOCOLPGM(" CHECK ! inside home after plan and st sync  X:");
+      SERIAL_PROTOCOL(current_position[X_AXIS]);
+      SERIAL_PROTOCOLPGM("Y:");
+      SERIAL_PROTOCOL(current_position[Y_AXIS]);
+      SERIAL_PROTOCOLPGM("Z:");
+      SERIAL_PROTOCOL(current_position[Z_AXIS]);
+      SERIAL_PROTOCOLPGM("E:");      
+      SERIAL_PROTOCOL(current_position[E_AXIS]);
+      
+      SERIAL_PROTOCOLPGM(MSG_COUNT_X);
+      SERIAL_PROTOCOL(float(st_get_position(X_AXIS))/axis_steps_per_unit[X_AXIS]);
+      SERIAL_PROTOCOLPGM("Y:");
+      SERIAL_PROTOCOL(float(st_get_position(Y_AXIS))/axis_steps_per_unit[Y_AXIS]);
+      SERIAL_PROTOCOLPGM("Z:");
+      SERIAL_PROTOCOL(float(st_get_position(Z_AXIS))/axis_steps_per_unit[Z_AXIS]);
+      
+      SERIAL_PROTOCOLLN("");
+      // --------------------------------------------
+
     axis_is_at_home(axis);					
+
+          // --------------------------------------------
+      SERIAL_PROTOCOLPGM(" CHECK  AFTER axis_is_at_home but BEFORE dest = current! X:");
+      SERIAL_PROTOCOL(current_position[X_AXIS]);
+      SERIAL_PROTOCOLPGM("Y:");
+      SERIAL_PROTOCOL(current_position[Y_AXIS]);
+      SERIAL_PROTOCOLPGM("Z:");
+      SERIAL_PROTOCOL(current_position[Z_AXIS]);
+      SERIAL_PROTOCOLPGM("E:");      
+      SERIAL_PROTOCOL(current_position[E_AXIS]);
+      
+      SERIAL_PROTOCOLPGM(MSG_COUNT_X);
+      SERIAL_PROTOCOL(float(st_get_position(X_AXIS))/axis_steps_per_unit[X_AXIS]);
+      SERIAL_PROTOCOLPGM("Y:");
+      SERIAL_PROTOCOL(float(st_get_position(Y_AXIS))/axis_steps_per_unit[Y_AXIS]);
+      SERIAL_PROTOCOLPGM("Z:");
+      SERIAL_PROTOCOL(float(st_get_position(Z_AXIS))/axis_steps_per_unit[Z_AXIS]);
+      
+      SERIAL_PROTOCOLLN("");
+      // --------------------------------------------
+
+
     destination[axis] = current_position[axis];
     feedrate = 0.0;
+
+          // --------------------------------------------
+      SERIAL_PROTOCOLPGM(" CHECK after axis is at home and dest = current  ! X:");
+      SERIAL_PROTOCOL(current_position[X_AXIS]);
+      SERIAL_PROTOCOLPGM("Y:");
+      SERIAL_PROTOCOL(current_position[Y_AXIS]);
+      SERIAL_PROTOCOLPGM("Z:");
+      SERIAL_PROTOCOL(current_position[Z_AXIS]);
+      SERIAL_PROTOCOLPGM("E:");      
+      SERIAL_PROTOCOL(current_position[E_AXIS]);
+      
+      SERIAL_PROTOCOLPGM(MSG_COUNT_X);
+      SERIAL_PROTOCOL(float(st_get_position(X_AXIS))/axis_steps_per_unit[X_AXIS]);
+      SERIAL_PROTOCOLPGM("Y:");
+      SERIAL_PROTOCOL(float(st_get_position(Y_AXIS))/axis_steps_per_unit[Y_AXIS]);
+      SERIAL_PROTOCOLPGM("Z:");
+      SERIAL_PROTOCOL(float(st_get_position(Z_AXIS))/axis_steps_per_unit[Z_AXIS]);
+      
+      SERIAL_PROTOCOLLN("");
+      // --------------------------------------------
+
     endstops_hit_on_purpose();
+
+          // --------------------------------------------
+      SERIAL_PROTOCOLPGM(" CHECK ! inside function and after endstops on purpose  X:");
+      SERIAL_PROTOCOL(current_position[X_AXIS]);
+      SERIAL_PROTOCOLPGM("Y:");
+      SERIAL_PROTOCOL(current_position[Y_AXIS]);
+      SERIAL_PROTOCOLPGM("Z:");
+      SERIAL_PROTOCOL(current_position[Z_AXIS]);
+      SERIAL_PROTOCOLPGM("E:");      
+      SERIAL_PROTOCOL(current_position[E_AXIS]);
+      
+      SERIAL_PROTOCOLPGM(MSG_COUNT_X);
+      SERIAL_PROTOCOL(float(st_get_position(X_AXIS))/axis_steps_per_unit[X_AXIS]);
+      SERIAL_PROTOCOLPGM("Y:");
+      SERIAL_PROTOCOL(float(st_get_position(Y_AXIS))/axis_steps_per_unit[Y_AXIS]);
+      SERIAL_PROTOCOLPGM("Z:");
+      SERIAL_PROTOCOL(float(st_get_position(Z_AXIS))/axis_steps_per_unit[Z_AXIS]);
+      
+      SERIAL_PROTOCOLLN("");
+      // --------------------------------------------
+
   }
 }
 #define HOMEAXIS(LETTER) homeaxis(LETTER##_AXIS)
@@ -1076,19 +1150,144 @@ void process_commands()
         current_position[X_AXIS] = 0;
         current_position[Y_AXIS] = 0;
         current_position[Z_AXIS] = 0;
+
+              // --------------------------------------------
+      SERIAL_PROTOCOLPGM(" CHECK ! X:");
+      SERIAL_PROTOCOL(current_position[X_AXIS]);
+      SERIAL_PROTOCOLPGM("Y:");
+      SERIAL_PROTOCOL(current_position[Y_AXIS]);
+      SERIAL_PROTOCOLPGM("Z:");
+      SERIAL_PROTOCOL(current_position[Z_AXIS]);
+      SERIAL_PROTOCOLPGM("E:");      
+      SERIAL_PROTOCOL(current_position[E_AXIS]);
+      
+      SERIAL_PROTOCOLPGM(MSG_COUNT_X);
+      SERIAL_PROTOCOL(float(st_get_position(X_AXIS))/axis_steps_per_unit[X_AXIS]);
+      SERIAL_PROTOCOLPGM("Y:");
+      SERIAL_PROTOCOL(float(st_get_position(Y_AXIS))/axis_steps_per_unit[Y_AXIS]);
+      SERIAL_PROTOCOLPGM("Z:");
+      SERIAL_PROTOCOL(float(st_get_position(Z_AXIS))/axis_steps_per_unit[Z_AXIS]);
+      
+      SERIAL_PROTOCOLLN("");
+      // --------------------------------------------
+
         plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]); 
+
+      // --------------------------------------------
+      SERIAL_PROTOCOLPGM(" CHECK AFTER PLAN SET in G28 ! X:");
+      SERIAL_PROTOCOL(current_position[X_AXIS]);
+      SERIAL_PROTOCOLPGM("Y:");
+      SERIAL_PROTOCOL(current_position[Y_AXIS]);
+      SERIAL_PROTOCOLPGM("Z:");
+      SERIAL_PROTOCOL(current_position[Z_AXIS]);
+      SERIAL_PROTOCOLPGM("E:");      
+      SERIAL_PROTOCOL(current_position[E_AXIS]);
+      
+      SERIAL_PROTOCOLPGM(MSG_COUNT_X);
+      SERIAL_PROTOCOL(float(st_get_position(X_AXIS))/axis_steps_per_unit[X_AXIS]);
+      SERIAL_PROTOCOLPGM("Y:");
+      SERIAL_PROTOCOL(float(st_get_position(Y_AXIS))/axis_steps_per_unit[Y_AXIS]);
+      SERIAL_PROTOCOLPGM("Z:");
+      SERIAL_PROTOCOL(float(st_get_position(Z_AXIS))/axis_steps_per_unit[Z_AXIS]);
+      
+      SERIAL_PROTOCOLLN("");
+      // --------------------------------------------
 
         destination[X_AXIS] = 3 * Z_MAX_LENGTH;
         destination[Y_AXIS] = 3 * Z_MAX_LENGTH;
         destination[Z_AXIS] = 3 * Z_MAX_LENGTH;
         feedrate = 1.732 * homing_feedrate[X_AXIS];
         plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder);
+
+              // --------------------------------------------
+      SERIAL_PROTOCOLPGM(" CHECK AFTER PLAN BUFFER LINE ! X:");
+      SERIAL_PROTOCOL(current_position[X_AXIS]);
+      SERIAL_PROTOCOLPGM("Y:");
+      SERIAL_PROTOCOL(current_position[Y_AXIS]);
+      SERIAL_PROTOCOLPGM("Z:");
+      SERIAL_PROTOCOL(current_position[Z_AXIS]);
+      SERIAL_PROTOCOLPGM("E:");      
+      SERIAL_PROTOCOL(current_position[E_AXIS]);
+      
+      SERIAL_PROTOCOLPGM(MSG_COUNT_X);
+      SERIAL_PROTOCOL(float(st_get_position(X_AXIS))/axis_steps_per_unit[X_AXIS]);
+      SERIAL_PROTOCOLPGM("Y:");
+      SERIAL_PROTOCOL(float(st_get_position(Y_AXIS))/axis_steps_per_unit[Y_AXIS]);
+      SERIAL_PROTOCOLPGM("Z:");
+      SERIAL_PROTOCOL(float(st_get_position(Z_AXIS))/axis_steps_per_unit[Z_AXIS]);
+      
+      SERIAL_PROTOCOLLN("");
+      // --------------------------------------------
+
         st_synchronize();
+
+              // --------------------------------------------
+      SERIAL_PROTOCOLPGM(" CHECK ! X AFTER st_synchronize:");
+      SERIAL_PROTOCOL(current_position[X_AXIS]);
+      SERIAL_PROTOCOLPGM("Y:");
+      SERIAL_PROTOCOL(current_position[Y_AXIS]);
+      SERIAL_PROTOCOLPGM("Z:");
+      SERIAL_PROTOCOL(current_position[Z_AXIS]);
+      SERIAL_PROTOCOLPGM("E:");      
+      SERIAL_PROTOCOL(current_position[E_AXIS]);
+      
+      SERIAL_PROTOCOLPGM(MSG_COUNT_X);
+      SERIAL_PROTOCOL(float(st_get_position(X_AXIS))/axis_steps_per_unit[X_AXIS]);
+      SERIAL_PROTOCOLPGM("Y:");
+      SERIAL_PROTOCOL(float(st_get_position(Y_AXIS))/axis_steps_per_unit[Y_AXIS]);
+      SERIAL_PROTOCOLPGM("Z:");
+      SERIAL_PROTOCOL(float(st_get_position(Z_AXIS))/axis_steps_per_unit[Z_AXIS]);
+      
+      SERIAL_PROTOCOLLN("");
+      // --------------------------------------------
+
         endstops_hit_on_purpose();
+
+              // --------------------------------------------
+      SERIAL_PROTOCOLPGM(" CHECK  AFTER endstops_hit_on_purpose! X:");
+      SERIAL_PROTOCOL(current_position[X_AXIS]);
+      SERIAL_PROTOCOLPGM("Y:");
+      SERIAL_PROTOCOL(current_position[Y_AXIS]);
+      SERIAL_PROTOCOLPGM("Z:");
+      SERIAL_PROTOCOL(current_position[Z_AXIS]);
+      SERIAL_PROTOCOLPGM("E:");      
+      SERIAL_PROTOCOL(current_position[E_AXIS]);
+      
+      SERIAL_PROTOCOLPGM(MSG_COUNT_X);
+      SERIAL_PROTOCOL(float(st_get_position(X_AXIS))/axis_steps_per_unit[X_AXIS]);
+      SERIAL_PROTOCOLPGM("Y:");
+      SERIAL_PROTOCOL(float(st_get_position(Y_AXIS))/axis_steps_per_unit[Y_AXIS]);
+      SERIAL_PROTOCOLPGM("Z:");
+      SERIAL_PROTOCOL(float(st_get_position(Z_AXIS))/axis_steps_per_unit[Z_AXIS]);
+      
+      SERIAL_PROTOCOLLN("");
+      // --------------------------------------------
+
 
         current_position[X_AXIS] = destination[X_AXIS];
         current_position[Y_AXIS] = destination[Y_AXIS];
         current_position[Z_AXIS] = destination[Z_AXIS];
+
+              // --------------------------------------------
+      SERIAL_PROTOCOLPGM(" CHECK  RIGHT after setting current position on z ! X:");
+      SERIAL_PROTOCOL(current_position[X_AXIS]);
+      SERIAL_PROTOCOLPGM("Y:");
+      SERIAL_PROTOCOL(current_position[Y_AXIS]);
+      SERIAL_PROTOCOLPGM("Z:");
+      SERIAL_PROTOCOL(current_position[Z_AXIS]);
+      SERIAL_PROTOCOLPGM("E:");      
+      SERIAL_PROTOCOL(current_position[E_AXIS]);
+      
+      SERIAL_PROTOCOLPGM(MSG_COUNT_X);
+      SERIAL_PROTOCOL(float(st_get_position(X_AXIS))/axis_steps_per_unit[X_AXIS]);
+      SERIAL_PROTOCOLPGM("Y:");
+      SERIAL_PROTOCOL(float(st_get_position(Y_AXIS))/axis_steps_per_unit[Y_AXIS]);
+      SERIAL_PROTOCOLPGM("Z:");
+      SERIAL_PROTOCOL(float(st_get_position(Z_AXIS))/axis_steps_per_unit[Z_AXIS]);
+      
+      SERIAL_PROTOCOLLN("");
+      // --------------------------------------------
+
       }
       #endif
       
@@ -1101,9 +1300,50 @@ void process_commands()
         HOMEAXIS(Y);
       }
       
+            // --------------------------------------------
+      SERIAL_PROTOCOLPGM(" CHECK  BEFORE homeall for z ! X:");
+      SERIAL_PROTOCOL(current_position[X_AXIS]);
+      SERIAL_PROTOCOLPGM("Y:");
+      SERIAL_PROTOCOL(current_position[Y_AXIS]);
+      SERIAL_PROTOCOLPGM("Z:");
+      SERIAL_PROTOCOL(current_position[Z_AXIS]);
+      SERIAL_PROTOCOLPGM("E:");      
+      SERIAL_PROTOCOL(current_position[E_AXIS]);
+      
+      SERIAL_PROTOCOLPGM(MSG_COUNT_X);
+      SERIAL_PROTOCOL(float(st_get_position(X_AXIS))/axis_steps_per_unit[X_AXIS]);
+      SERIAL_PROTOCOLPGM("Y:");
+      SERIAL_PROTOCOL(float(st_get_position(Y_AXIS))/axis_steps_per_unit[Y_AXIS]);
+      SERIAL_PROTOCOLPGM("Z:");
+      SERIAL_PROTOCOL(float(st_get_position(Z_AXIS))/axis_steps_per_unit[Z_AXIS]);
+      
+      SERIAL_PROTOCOLLN("");
+      // --------------------------------------------
+
       if((home_all_axis) || (code_seen(axis_codes[Z_AXIS]))) {
         HOMEAXIS(Z);
       }
+
+            // --------------------------------------------
+      SERIAL_PROTOCOLPGM(" CHECK after code seen for z ! X:");
+      SERIAL_PROTOCOL(current_position[X_AXIS]);
+      SERIAL_PROTOCOLPGM("Y:");
+      SERIAL_PROTOCOL(current_position[Y_AXIS]);
+      SERIAL_PROTOCOLPGM("Z:");
+      SERIAL_PROTOCOL(current_position[Z_AXIS]);
+      SERIAL_PROTOCOLPGM("E:");      
+      SERIAL_PROTOCOL(current_position[E_AXIS]);
+      
+      SERIAL_PROTOCOLPGM(MSG_COUNT_X);
+      SERIAL_PROTOCOL(float(st_get_position(X_AXIS))/axis_steps_per_unit[X_AXIS]);
+      SERIAL_PROTOCOLPGM("Y:");
+      SERIAL_PROTOCOL(float(st_get_position(Y_AXIS))/axis_steps_per_unit[Y_AXIS]);
+      SERIAL_PROTOCOLPGM("Z:");
+      SERIAL_PROTOCOL(float(st_get_position(Z_AXIS))/axis_steps_per_unit[Z_AXIS]);
+      
+      SERIAL_PROTOCOLLN("");
+      // --------------------------------------------
+
       
       if(code_seen(axis_codes[X_AXIS])) 
       {
@@ -1118,13 +1358,115 @@ void process_commands()
         }
       }
 
+      // --------------------------------------------
+      SERIAL_PROTOCOLPGM(" CHECK before add homeing! X:");
+      SERIAL_PROTOCOL(current_position[X_AXIS]);
+      SERIAL_PROTOCOLPGM("Y:");
+      SERIAL_PROTOCOL(current_position[Y_AXIS]);
+      SERIAL_PROTOCOLPGM("Z:");
+      SERIAL_PROTOCOL(current_position[Z_AXIS]);
+      SERIAL_PROTOCOLPGM("E:");      
+      SERIAL_PROTOCOL(current_position[E_AXIS]);
+      
+      SERIAL_PROTOCOLPGM(MSG_COUNT_X);
+      SERIAL_PROTOCOL(float(st_get_position(X_AXIS))/axis_steps_per_unit[X_AXIS]);
+      SERIAL_PROTOCOLPGM("Y:");
+      SERIAL_PROTOCOL(float(st_get_position(Y_AXIS))/axis_steps_per_unit[Y_AXIS]);
+      SERIAL_PROTOCOLPGM("Z:");
+      SERIAL_PROTOCOL(float(st_get_position(Z_AXIS))/axis_steps_per_unit[Z_AXIS]);
+      
+      SERIAL_PROTOCOLLN("");
+      // --------------------------------------------
+
       if(code_seen(axis_codes[Z_AXIS])) {
         if(code_value_long() != 0) {
+                // --------------------------------------------
+      SERIAL_PROTOCOLPGM(" CHECK inside add homing! X:");
+      SERIAL_PROTOCOL(current_position[X_AXIS]);
+      SERIAL_PROTOCOLPGM("Y:");
+      SERIAL_PROTOCOL(current_position[Y_AXIS]);
+      SERIAL_PROTOCOLPGM("Z:");
+      SERIAL_PROTOCOL(current_position[Z_AXIS]);
+      SERIAL_PROTOCOLPGM("E:");      
+      SERIAL_PROTOCOL(current_position[E_AXIS]);
+      
+      SERIAL_PROTOCOLPGM(MSG_COUNT_X);
+      SERIAL_PROTOCOL(float(st_get_position(X_AXIS))/axis_steps_per_unit[X_AXIS]);
+      SERIAL_PROTOCOLPGM("Y:");
+      SERIAL_PROTOCOL(float(st_get_position(Y_AXIS))/axis_steps_per_unit[Y_AXIS]);
+      SERIAL_PROTOCOLPGM("Z:");
+      SERIAL_PROTOCOL(float(st_get_position(Z_AXIS))/axis_steps_per_unit[Z_AXIS]);
+      
+      SERIAL_PROTOCOLLN("");
+      // --------------------------------------------
+
           current_position[Z_AXIS]=code_value()+add_homeing[2];
         }
       }
+
+            // --------------------------------------------
+      SERIAL_PROTOCOLPGM(" CHECK after addd homing for z  ! X:");
+      SERIAL_PROTOCOL(current_position[X_AXIS]);
+      SERIAL_PROTOCOLPGM("Y:");
+      SERIAL_PROTOCOL(current_position[Y_AXIS]);
+      SERIAL_PROTOCOLPGM("Z:");
+      SERIAL_PROTOCOL(current_position[Z_AXIS]);
+      SERIAL_PROTOCOLPGM("E:");      
+      SERIAL_PROTOCOL(current_position[E_AXIS]);
+      
+      SERIAL_PROTOCOLPGM(MSG_COUNT_X);
+      SERIAL_PROTOCOL(float(st_get_position(X_AXIS))/axis_steps_per_unit[X_AXIS]);
+      SERIAL_PROTOCOLPGM("Y:");
+      SERIAL_PROTOCOL(float(st_get_position(Y_AXIS))/axis_steps_per_unit[Y_AXIS]);
+      SERIAL_PROTOCOLPGM("Z:");
+      SERIAL_PROTOCOL(float(st_get_position(Z_AXIS))/axis_steps_per_unit[Z_AXIS]);
+      
+      SERIAL_PROTOCOLLN("");
+      // --------------------------------------------
+
+
+            // --------------------------------------------
+      SERIAL_PROTOCOLPGM(" CHECK ! X:");
+      SERIAL_PROTOCOL(current_position[X_AXIS]);
+      SERIAL_PROTOCOLPGM("Y:");
+      SERIAL_PROTOCOL(current_position[Y_AXIS]);
+      SERIAL_PROTOCOLPGM("Z:");
+      SERIAL_PROTOCOL(current_position[Z_AXIS]);
+      SERIAL_PROTOCOLPGM("E:");      
+      SERIAL_PROTOCOL(current_position[E_AXIS]);
+      
+      SERIAL_PROTOCOLPGM(MSG_COUNT_X);
+      SERIAL_PROTOCOL(float(st_get_position(X_AXIS))/axis_steps_per_unit[X_AXIS]);
+      SERIAL_PROTOCOLPGM("Y:");
+      SERIAL_PROTOCOL(float(st_get_position(Y_AXIS))/axis_steps_per_unit[Y_AXIS]);
+      SERIAL_PROTOCOLPGM("Z:");
+      SERIAL_PROTOCOL(float(st_get_position(Z_AXIS))/axis_steps_per_unit[Z_AXIS]);
+      
+      SERIAL_PROTOCOLLN("");
+      // --------------------------------------------
+
       calculate_delta(current_position);
       plan_set_position(delta[X_AXIS], delta[Y_AXIS], delta[Z_AXIS], current_position[E_AXIS]);
+
+      // --------------------------------------------
+      SERIAL_PROTOCOLPGM(" CHECK ! X:");
+      SERIAL_PROTOCOL(current_position[X_AXIS]);
+      SERIAL_PROTOCOLPGM("Y:");
+      SERIAL_PROTOCOL(current_position[Y_AXIS]);
+      SERIAL_PROTOCOLPGM("Z:");
+      SERIAL_PROTOCOL(current_position[Z_AXIS]);
+      SERIAL_PROTOCOLPGM("E:");      
+      SERIAL_PROTOCOL(current_position[E_AXIS]);
+      
+      SERIAL_PROTOCOLPGM(MSG_COUNT_X);
+      SERIAL_PROTOCOL(float(st_get_position(X_AXIS))/axis_steps_per_unit[X_AXIS]);
+      SERIAL_PROTOCOLPGM("Y:");
+      SERIAL_PROTOCOL(float(st_get_position(Y_AXIS))/axis_steps_per_unit[Y_AXIS]);
+      SERIAL_PROTOCOLPGM("Z:");
+      SERIAL_PROTOCOL(float(st_get_position(Z_AXIS))/axis_steps_per_unit[Z_AXIS]);
+      
+      SERIAL_PROTOCOLLN("");
+      // --------------------------------------------
       
       #ifdef ENDSTOPS_ONLY_FOR_HOMING
         enable_endstops(false);
@@ -1179,7 +1521,7 @@ SERIAL_PROTOCOLPGM("Let's get it started!\n");
                 SERIAL_PROTOCOLPGM("Before First move for: ");
                 SERIAL_PROTOCOLLN(i);
                 do_blocking_move_to(current_position[X_AXIS], current_position[Y_AXIS], 40);
-                SERIAL_PROTOCOLPGM("After First move\n");
+                print_pos("After First move");
                 // move to probe-point
                 SERIAL_PROTOCOLPGM("Moving to x:");
                 SERIAL_PROTOCOL(positions[i][0] - X_PROBE_OFFSET_FROM_EXTRUDER);
@@ -1199,6 +1541,8 @@ SERIAL_PROTOCOLPGM("Let's get it started!\n");
                 // SERIAL_PROTOCOL(current_position[Z_AXIS]);
                 SERIAL_PROTOCOL(z_at_positions[i]);
                 SERIAL_PROTOCOLPGM("\n");
+
+                print_pos("----------------\nDONE WITH PROBE THERE");
             }
             SERIAL_PROTOCOLPGM("ended at x: ");
             SERIAL_PROTOCOL(current_position[X_AXIS]);
