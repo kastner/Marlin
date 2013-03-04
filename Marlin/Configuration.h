@@ -75,7 +75,7 @@
 
 // Horizontal offset of the universal joints on the end effector.
 // #define DELTA_EFFECTOR_OFFSET 32.0 // mm
-#define DELTA_EFFECTOR_OFFSET 42.0 // mm
+#define DELTA_EFFECTOR_OFFSET 32.0 // mm
 
 // Horizontal offset of the universal joints on the carriages.
 // #define DELTA_CARRIAGE_OFFSET 26.0 // mm
@@ -85,7 +85,7 @@
 // In order to correct high-center, DELTA_RADIUS must be decreased.
 // For convex/concave -- -20->-30 makes the center go DOWN
 // #define DELTA_FUDGE -27.4 // 152.4 total radius
-#define DELTA_FUDGE -6.3
+#define DELTA_FUDGE 0.5
 
 // Effective horizontal distance bridged by diagonal push rods.
 #define DELTA_RADIUS (DELTA_SMOOTH_ROD_OFFSET-DELTA_EFFECTOR_OFFSET-DELTA_CARRIAGE_OFFSET-DELTA_FUDGE)
@@ -321,7 +321,7 @@ const bool Z_ENDSTOPS_INVERTING = false; // set to true to invert the logic of t
   // these are the offsets to the prob relative to the extruder tip
   #define X_PROBE_OFFSET_FROM_EXTRUDER 6
   #define Y_PROBE_OFFSET_FROM_EXTRUDER 30
-  #define Z_PROBE_OFFSET_FROM_EXTRUDER -3
+  #define Z_PROBE_OFFSET_FROM_EXTRUDER -20.20
 #endif
 
 #define min_software_endstops true //If true, axis won't move to coordinates less than HOME_POS.
@@ -360,7 +360,8 @@ const bool Z_ENDSTOPS_INVERTING = false; // set to true to invert the logic of t
 // #define MANUAL_Z_HOME_POS 165.6  // (j-head - bigglass -- long arms)
 // #define MANUAL_Z_HOME_POS 166.7 // 166.7
 // #define MANUAL_Z_HOME_POS 126.7 // 166.7 -- for testing probe
-#define MANUAL_Z_HOME_POS 146.7 // 166.7
+// #define MANUAL_Z_HOME_POS 146.7 // 166.7
+#define MANUAL_Z_HOME_POS 168.9
 
 //// MOVEMENT SETTINGS
 #define NUM_AXIS 4 // The axis order in all axis related arrays is X, Y, Z, E
